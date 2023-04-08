@@ -30,6 +30,16 @@ public class WebSocketServer {
                 .setHandler(getWebSocketHandler())
                 .build();
         server.start();
+        while (true) {
+            try {
+                Thread.sleep(1000);
+                if (wsChannel != null) {
+                    WebSockets.sendText("tick", wsChannel, null);
+                }
+            } catch (InterruptedException e) {
+                LOGGER.info("oops", e);
+            }
+        }
     }
 
     public void stopServer() {
@@ -37,6 +47,8 @@ public class WebSocketServer {
             server.stop();
         }
     }
+
+    WebSocketChannel wsChannel = null;
 
     private PathHandler getWebSocketHandler() {
         return path().addPath("/websocket", websocket(new WebSocketConnectionCallback() {
@@ -52,6 +64,7 @@ public class WebSocketServer {
                     }
                 });
                 channel.resumeReceives();
+                wsChannel = channel;
             }
         }))
                 .addPath("/", resource(new ClassPathResourceManager(WebSocketServer.class.getClassLoader(), WebSocketServer.class.getPackage()))
