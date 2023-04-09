@@ -12,6 +12,10 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 import static io.undertow.Handlers.*;
 
 public class WebSocketServer {
@@ -28,19 +32,21 @@ public class WebSocketServer {
         server = Undertow.builder()
                 .addListener(port, host)
                 .setHandler(getWebSocketHandler())
+                .setWorkerThreads(1)
                 .build();
         server.start();
         while (true) {
             try {
                 Thread.sleep(1000);
-                if (wsChannel != null) {
-                    WebSockets.sendText("tick", wsChannel, null);
+                for (var wsChannel : wsChannels) {
+                    WebSockets.sendText(new Date() + " "  + wsChannel.toString(), wsChannel, null);
                 }
             } catch (InterruptedException e) {
                 LOGGER.info("oops", e);
             }
         }
     }
+    List<WebSocketChannel> wsChannels = new ArrayList<>();
 
     public void stopServer() {
         if (server != null) {
@@ -48,7 +54,6 @@ public class WebSocketServer {
         }
     }
 
-    WebSocketChannel wsChannel = null;
 
     private PathHandler getWebSocketHandler() {
         return path().addPath("/websocket", websocket(new WebSocketConnectionCallback() {
@@ -64,7 +69,7 @@ public class WebSocketServer {
                     }
                 });
                 channel.resumeReceives();
-                wsChannel = channel;
+                wsChannels.add(channel);
             }
         }))
                 .addPath("/", resource(new ClassPathResourceManager(WebSocketServer.class.getClassLoader(), WebSocketServer.class.getPackage()))
