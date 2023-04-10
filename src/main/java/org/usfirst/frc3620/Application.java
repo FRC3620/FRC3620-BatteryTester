@@ -1,4 +1,4 @@
-package martins.developer.world;
+package org.usfirst.frc3620;
 
 import io.undertow.Undertow;
 import io.undertow.server.handlers.PathHandler;
@@ -18,13 +18,13 @@ import java.util.List;
 
 import static io.undertow.Handlers.*;
 
-public class WebSocketServer {
+public class Application {
   private final Logger LOGGER = LoggerFactory.getLogger(getClass());
   private Undertow server;
   String lastReceivedMessage;
 
   public static void main(final String[] args) {
-    WebSocketServer webSocketServer = new WebSocketServer();
+    Application webSocketServer = new Application();
     webSocketServer.buildAndStartServer(8080, "localhost");
   }
 
@@ -73,7 +73,7 @@ public class WebSocketServer {
           wsChannels.add(channel);
         }
       }))
-      .addPrefixPath("/", resource(new ClassPathResourceManager(WebSocketServer.class.getClassLoader(), WebSocketServer.class.getPackage()))
+      .addPrefixPath("/", resource(new ClassPathResourceManager(Application.class.getClassLoader(), Application.class.getPackage()))
         .addWelcomeFiles("index.html"));
   }
 }
