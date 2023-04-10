@@ -17,12 +17,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 import static io.undertow.Handlers.*;
 
 public class Application {
-  private final Logger LOGGER = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
   private Undertow server;
 
   public static void main(final String[] args) {
@@ -31,30 +32,35 @@ public class Application {
   }
 
   HttpHandler ROUTES = new RoutingHandler()
-          .get("/websocket", websocket(new WSTest()))
-          .get("/", resource(new ClassPathResourceManager(getClass().getClassLoader(), getClass().getPackage()))
-                  .addWelcomeFiles("index.html"));
+    .get("/websocket", websocket(new WSTest()))
+    .get("/", resource(new ClassPathResourceManager(getClass().getClassLoader(), getClass().getPackage()))
+      .addWelcomeFiles("index.html"));
 
   PathHandler PATHS = path()
-            .addPrefixPath("/websocket", websocket(new WSTest()))
-            .addPrefixPath("/", resource(new ClassPathResourceManager(getClass().getClassLoader(), getClass().getPackage()))
-                    .addWelcomeFiles("index.html"));
+    .addPrefixPath("/websocket", websocket(new WSTest()))
+    .addPrefixPath("/", resource(new ClassPathResourceManager(getClass().getClassLoader(), getClass().getPackage()))
+      .addWelcomeFiles("index.html"));
 
   public void buildAndStartServer(int port, String host) {
     server = Undertow.builder()
       .addHttpListener(port, host)
-      .setHandler(PATHS)
+      .setHandler(ROUTES)
       .setWorkerThreads(1)
       .build();
     server.start();
     while (true) {
       try {
         Thread.sleep(1000);
-        for (var wsChannel : wsChannels) {
-          WebSockets.sendText(new Date() + " " + wsChannel.toString(), wsChannel, null);
+        for (Iterator<WebSocketChannel> i = wsChannels.iterator(); i.hasNext(); ) {
+          var wsChannel = i.next();
+          if (wsChannel.isOpen()) {
+            WebSockets.sendText(new Date() + " " + wsChannel.toString(), wsChannel, null);
+          } else {
+            i.remove();
+          }
         }
       } catch (InterruptedException e) {
-        LOGGER.info("oops", e);
+        logger.info("oops", e);
       }
     }
   }
@@ -62,19 +68,18 @@ public class Application {
   class WSTest implements WebSocketConnectionCallback {
     @Override
     public void onConnect(WebSocketHttpExchange exchange, WebSocketChannel channel) {
-      LOGGER.info("Got connection {}", channel);
+      logger.info("Got connection {}", channel);
       channel.getReceiveSetter().set(new AbstractReceiveListener() {
         @Override
         protected void onFullTextMessage(WebSocketChannel channel, BufferedTextMessage message) {
-          String data = message.getData();
-          LOGGER.info("Received data: {}", data);
-          WebSockets.sendText(data, channel, null);
+        String data = message.getData();
+        logger.info("Received data: {}", data);
+        WebSockets.sendText(data, channel, null);
         }
       });
       channel.resumeReceives();
       wsChannels.add(channel);
     }
-
   }
 
   List<WebSocketChannel> wsChannels = new ArrayList<>();
