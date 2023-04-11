@@ -37,7 +37,7 @@ public class FakeBattery implements IBattery {
         double ohms = 12.0 / currentLoad;
         double a = v / (ohms + internalResistance);
         double drop = a * internalResistance;
-        return new BatteryStatus(v - drop, a);
+        return new BatteryStatus(lastT, v - drop, a);
     }
 
     @Override

@@ -1,4 +1,4 @@
-var ws = $.gracefulWebSocket("ws://127.0.0.1:8080/websocket");
+var ws = $.gracefulWebSocket("ws://127.0.0.1:8080/battery");
 ws.onmessage = function(event) {
     var messageFromServer = event.data;
     $('#output').append('<p>Received: '+messageFromServer+'</p>');

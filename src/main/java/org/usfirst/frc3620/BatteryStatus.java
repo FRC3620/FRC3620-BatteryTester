@@ -1,11 +1,20 @@
 package org.usfirst.frc3620;
 
-public class BatteryStatus {
-    private double voltage, amperage;
+import java.util.StringJoiner;
 
-    BatteryStatus (double v, double a) {
+public class BatteryStatus {
+    private final double voltage;
+    private final double amperage;
+    private final long time;
+
+    BatteryStatus (long t, double v, double a) {
+        time = t;
         voltage = v;
         amperage = a;
+    }
+
+    public long getTime() {
+        return time;
     }
 
     public double getVoltage() {
@@ -14,5 +23,14 @@ public class BatteryStatus {
 
     public double getAmperage() {
         return amperage;
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", BatteryStatus.class.getSimpleName() + "[", "]")
+                .add("time=" + time)
+                .add("voltage=" + voltage)
+                .add("amperage=" + amperage)
+                .toString();
     }
 }
