@@ -1,5 +1,7 @@
 package org.usfirst.frc3620;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.RoutingHandler;
@@ -107,6 +109,8 @@ public class Application {
     }
 
     class BatteryStatusSender implements Consumer<BatteryStatus>, WebSocketConnectionCallback {
+        ObjectMapper objectMapper = new ObjectMapper();
+
         BatteryStatusSender() {
             logger.info ("creating {}", this);
         }
@@ -121,7 +125,12 @@ public class Application {
         @Override
         public void accept(BatteryStatus batteryStatus) {
             logger.debug ("Accepted {}", batteryStatus);
-            String payload = batteryStatus.toString();
+            String payload = null;
+            try {
+                payload = objectMapper.writeValueAsString(batteryStatus);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
             for (Iterator<WebSocketChannel> i = wsChannels.iterator(); i.hasNext(); ) {
                 var channel = i.next();
                 if (channel.isOpen()) {
