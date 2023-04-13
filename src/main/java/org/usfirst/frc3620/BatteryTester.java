@@ -15,7 +15,7 @@ public class BatteryTester implements Runnable {
 
     Object waitLock = new Object();
 
-    List<Consumer<BatteryStatus>> statusConsumers = new ArrayList<>();
+    List<Consumer<BatteryTestStatus>> statusConsumers = new ArrayList<>();
 
     public BatteryTester (IBattery battery)  {
         this.battery = battery;
@@ -39,11 +39,21 @@ public class BatteryTester implements Runnable {
             }
             if (fakeBattery != null) fakeBattery.update();
 
-            BatteryStatus batteryStatus = battery.getBatteryStatus();
+            long now = System.currentTimeMillis();
+            long tDelta = now;
+            if (t0 != null) {
+                tDelta = now - t0;
+            }
+            BatteryTestStatus batteryStatus = new BatteryTestStatus(tDelta, battery.getBatteryStatus());
             for (var c : statusConsumers) {
                 c.accept(batteryStatus);
             }
         }
+    }
+
+    Long t0 = null;
+    public void reset() {
+        t0 = System.currentTimeMillis();
     }
 
     public void startTest (double amperage) {
@@ -57,7 +67,7 @@ public class BatteryTester implements Runnable {
         }
     }
 
-    public void addStatusConsumer (Consumer<BatteryStatus> cs) {
+    public void addStatusConsumer (Consumer<BatteryTestStatus> cs) {
         statusConsumers.add(cs);
     }
 

@@ -5,16 +5,9 @@ import java.util.StringJoiner;
 public class BatteryStatus {
     private final double voltage;
     private final double amperage;
-    private final long time;
-
-    BatteryStatus (long t, double v, double a) {
-        time = t;
+    BatteryStatus (double v, double a) {
         voltage = v;
         amperage = a;
-    }
-
-    public long getTime() {
-        return time;
     }
 
     public double getVoltage() {
@@ -28,7 +21,6 @@ public class BatteryStatus {
     @Override
     public String toString() {
         return new StringJoiner(", ", BatteryStatus.class.getSimpleName() + "[", "]")
-                .add("time=" + time)
                 .add("voltage=" + voltage)
                 .add("amperage=" + amperage)
                 .toString();

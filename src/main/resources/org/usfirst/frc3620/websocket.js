@@ -1,9 +1,12 @@
-var ws = $.gracefulWebSocket("ws://127.0.0.1:8080/battery");
-ws.onmessage = function(event) {
-    var messageFromServer = event.data;
-    $('#output').append('<p>Received: '+messageFromServer+'</p>');
+var ws = new ReconnectingWebSocket("ws://127.0.0.1:8080/battery");
+ws.debug = true;
+ws.onmessage = function (event) {
+    var messageFromServer = event;
+    $('#output').append('<p>Received!!!!!: '+messageFromServer+'</p>');
 }
 
-function send(message) {
-    ws.send(message);
+ws.onopen = function (event) {
+}
+
+ws.onclose = function (event) {
 }

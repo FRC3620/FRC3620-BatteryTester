@@ -16,10 +16,7 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static io.undertow.Handlers.*;
@@ -30,7 +27,7 @@ public class Application {
 
     private IBattery battery;
     private BatteryTester batteryTester;
-    private BatteryStatusSender batteryStatusSender;
+    private BatteryTestStatusSender batteryStatusSender;
 
     public static void main(final String[] args) {
         Application application = new Application();
@@ -38,7 +35,7 @@ public class Application {
     }
 
     public void buildAndStartServer(int port, String host) {
-        batteryStatusSender = new BatteryStatusSender();
+        batteryStatusSender = new BatteryTestStatusSender();
 
         HttpHandler handler = null;
         if (false) {
@@ -70,6 +67,7 @@ public class Application {
         batteryTester.addStatusConsumer(batteryStatusSender);
         Thread batteryThread = new Thread(batteryTester);
         batteryThread.start();
+        batteryTester.startTest(10);
 
         while (true) {
             try {
@@ -108,13 +106,15 @@ public class Application {
         }
     }
 
-    class BatteryStatusSender implements Consumer<BatteryStatus>, WebSocketConnectionCallback {
+    class BatteryTestStatusSender implements Consumer<BatteryTestStatus>, WebSocketConnectionCallback {
         ObjectMapper objectMapper = new ObjectMapper();
 
-        BatteryStatusSender() {
+        BatteryTestStatusSender() {
             logger.info ("creating {}", this);
         }
         List<WebSocketChannel> wsChannels = new ArrayList<>();
+
+        Map<String, String> broadcasts = new HashMap<>();
 
         @Override
         public void onConnect(WebSocketHttpExchange exchange, WebSocketChannel channel) {
@@ -123,23 +123,45 @@ public class Application {
         }
 
         @Override
-        public void accept(BatteryStatus batteryStatus) {
-            logger.debug ("Accepted {}", batteryStatus);
-            String payload = null;
+        public void accept(BatteryTestStatus batteryTestStatus) {
+            logger.debug ("Accepted {}", batteryTestStatus);
+            broadcast("test_status", batteryTestStatus);
+        }
+
+        public void broadcast (String messageType, Object payload) {
+            WebsocketMessage w = new WebsocketMessage(messageType, payload);
             try {
-                payload = objectMapper.writeValueAsString(batteryStatus);
+                String j = objectMapper.writeValueAsString(w);
+                for (Iterator<WebSocketChannel> i = wsChannels.iterator(); i.hasNext(); ) {
+                    var channel = i.next();
+                    if (channel.isOpen()) {
+                        WebSockets.sendText(j, channel, null);
+                    } else {
+                        logger.info ("Dropping connection {}", channel);
+                        i.remove();
+                    }
+                }
+                broadcasts.put(messageType, j);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
-            for (Iterator<WebSocketChannel> i = wsChannels.iterator(); i.hasNext(); ) {
-                var channel = i.next();
-                if (channel.isOpen()) {
-                    WebSockets.sendText(payload, channel, null);
-                } else {
-                    logger.info ("Dropping connection {}", channel);
-                    i.remove();
-                }
-            }
+        }
+    }
+
+    public static class WebsocketMessage {
+        String messageType;
+        Object payload;
+        public WebsocketMessage (String messageType, Object payload) {
+            this.messageType = messageType;
+            this.payload = payload;
+        }
+
+        public String getMessageType() {
+            return messageType;
+        }
+
+        public Object getPayload() {
+            return payload;
         }
     }
 

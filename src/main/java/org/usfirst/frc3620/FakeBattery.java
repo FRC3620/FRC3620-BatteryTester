@@ -37,7 +37,7 @@ public class FakeBattery implements IBattery {
         double ohms = 12.0 / currentLoad;
         double a = v / (ohms + internalResistance);
         double drop = a * internalResistance;
-        return new BatteryStatus(lastT, v - drop, a);
+        return new BatteryStatus(v - drop, a);
     }
 
     @Override
@@ -60,8 +60,10 @@ public class FakeBattery implements IBattery {
             double tDelta = t - lastT;
             double voltage = calculateInternalVoltage();
             double current = voltage / (ohms + internalResistance);
-            double ampHourDelta = current * (tDelta / 3600.0);
+            double ampHourDelta = current * ((tDelta / 1000.0) / 3600.0);
             currentCapacity -= ampHourDelta;
+
+            if (currentCapacity < 0) currentCapacity = 0;
         }
         lastT = t;
     }
@@ -71,11 +73,16 @@ public class FakeBattery implements IBattery {
         if (capacityLeft >= 1.00) {
             return voltages[10];
         }
+        if (capacityLeft <= 0.00) {
+            return voltages[0];
+        }
         int index = (int) (capacityLeft * 10);
         double v1 = voltages[index];
         double v2 = voltages[index + 1];
         double vSpan = v2 - v1;
         double spanSize = (capacityLeft % 0.1) * 10;
-        return v1 + (vSpan * spanSize);
+        double v = v1 + (vSpan * spanSize);
+        // System.out.println ("v = " + v + ", capacity left = " + capacityLeft);
+        return v;
     }
 }
