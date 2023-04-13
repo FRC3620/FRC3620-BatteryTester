@@ -3,19 +3,19 @@ package org.usfirst.frc3620;
 import java.util.StringJoiner;
 
 public class BatteryTestStatus extends BatteryStatus {
-  private final long time;
+  private final double time;
 
-  BatteryTestStatus (long t, double v, double a) {
+  BatteryTestStatus (double t, double v, double a) {
     super(v, a);
     time = t;
   }
 
-  BatteryTestStatus (long t, BatteryStatus batteryStatus) {
+  BatteryTestStatus (double t, BatteryStatus batteryStatus) {
     super(batteryStatus.getVoltage(), batteryStatus.getAmperage());
     time = t;
   }
 
-  public long getTime() {
+  public double getTime() {
     return time;
   }
 

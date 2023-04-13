@@ -6,6 +6,8 @@ import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.RoutingHandler;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
+import io.undertow.server.handlers.resource.PathResourceManager;
+import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.websockets.WebSocketConnectionCallback;
 import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.BufferedTextMessage;
@@ -16,6 +18,7 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -37,19 +40,21 @@ public class Application {
     public void buildAndStartServer(int port, String host) {
         batteryStatusSender = new BatteryTestStatusSender();
 
+        ResourceManager contentHandler = new ClassPathResourceManager(getClass().getClassLoader(), getClass().getPackage());
+        // the following line is so we have hot reload when testing
+        contentHandler = new PathResourceManager(Paths.get("src/main/resources/org/usfirst/frc3620"));
+
         HttpHandler handler = null;
         if (false) {
             handler = new RoutingHandler()
                 .get("/websocket", websocket(new WSTest()))
                 .get("/battery", websocket(batteryStatusSender))
-                .get("/", resource(new ClassPathResourceManager(getClass().getClassLoader(), getClass().getPackage()))
-                    .addWelcomeFiles("index.html"));
+                .get("/", resource(contentHandler).addWelcomeFiles("index.html"));
         } else {
             handler = path()
                 .addPrefixPath("/websocket", websocket(new WSTest()))
                 .addPrefixPath("/battery", websocket(batteryStatusSender))
-                .addPrefixPath("/", resource(new ClassPathResourceManager(getClass().getClassLoader(), getClass().getPackage()))
-                    .addWelcomeFiles("index.html"));
+                .addPrefixPath("/", resource(contentHandler).addWelcomeFiles("index.html"));
         }
 
         server = Undertow.builder()

@@ -44,7 +44,7 @@ public class BatteryTester implements Runnable {
             if (t0 != null) {
                 tDelta = now - t0;
             }
-            BatteryTestStatus batteryStatus = new BatteryTestStatus(tDelta, battery.getBatteryStatus());
+            BatteryTestStatus batteryStatus = new BatteryTestStatus(tDelta / 1000.0, battery.getBatteryStatus());
             for (var c : statusConsumers) {
                 c.accept(batteryStatus);
             }
@@ -52,11 +52,8 @@ public class BatteryTester implements Runnable {
     }
 
     Long t0 = null;
-    public void reset() {
-        t0 = System.currentTimeMillis();
-    }
-
     public void startTest (double amperage) {
+        t0 = System.currentTimeMillis();
         battery.setLoad(amperage);
         bumpThread();
     }
