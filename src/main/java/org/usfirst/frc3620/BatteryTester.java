@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.function.Consumer;
 
 public class BatteryTester implements Runnable {
@@ -13,9 +15,11 @@ public class BatteryTester implements Runnable {
     IBattery battery;
     FakeBattery fakeBattery;
 
-    Object waitLock = new Object();
+    final Object waitLock = new Object();
 
-    List<Consumer<BatteryTestStatus>> statusConsumers = new ArrayList<>();
+    List<BlockingQueue<BatteryTestStatus>> statusQueues = new ArrayList<>();
+
+    List<BatteryTestStatus> testSamples = new ArrayList<>();
 
     public BatteryTester (IBattery battery)  {
         this.battery = battery;
@@ -44,9 +48,17 @@ public class BatteryTester implements Runnable {
             if (t0 != null) {
                 tDelta = now - t0;
             }
-            BatteryTestStatus batteryStatus = new BatteryTestStatus(tDelta / 1000.0, battery.getBatteryStatus());
-            for (var c : statusConsumers) {
-                c.accept(batteryStatus);
+            BatteryTestStatus batteryTestStatus = new BatteryTestStatus(tDelta / 1000.0, battery.getBatteryStatus());
+
+            synchronized (waitLock) {
+                testSamples.add(batteryTestStatus);
+                for (var q : statusQueues) {
+                    try {
+                        q.put(batteryTestStatus);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             }
         }
     }
@@ -64,8 +76,25 @@ public class BatteryTester implements Runnable {
         }
     }
 
-    public void addStatusConsumer (Consumer<BatteryTestStatus> cs) {
-        statusConsumers.add(cs);
+    public void addStatusConsumer (BlockingQueue<BatteryTestStatus> q, boolean catchup) {
+        synchronized (waitLock) {
+            if (catchup) {
+                for (var ts : testSamples) {
+                    try {
+                        q.put(ts);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+            statusQueues.add(q);
+        }
+    }
+
+    public void removeStatusConsumer (Queue<BatteryTestStatus> q) {
+        synchronized (waitLock) {
+            statusQueues.remove(q);
+        }
     }
 
     void loadOff() {

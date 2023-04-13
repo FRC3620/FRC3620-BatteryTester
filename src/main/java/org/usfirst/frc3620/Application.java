@@ -20,6 +20,9 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import static io.undertow.Handlers.*;
@@ -30,7 +33,7 @@ public class Application {
 
     private IBattery battery;
     private BatteryTester batteryTester;
-    private BatteryTestStatusSender batteryStatusSender;
+    private BatteryTestStatusWebSocket batteryStatusSender;
 
     public static void main(final String[] args) {
         Application application = new Application();
@@ -38,7 +41,7 @@ public class Application {
     }
 
     public void buildAndStartServer(int port, String host) {
-        batteryStatusSender = new BatteryTestStatusSender();
+        batteryStatusSender = new BatteryTestStatusWebSocket();
 
         ResourceManager contentHandler = new ClassPathResourceManager(getClass().getClassLoader(), getClass().getPackage());
         // the following line is so we have hot reload when testing
@@ -69,7 +72,7 @@ public class Application {
         battery = new FakeBattery(bi);
 
         batteryTester = new BatteryTester(battery);
-        batteryTester.addStatusConsumer(batteryStatusSender);
+        // batteryTester.addStatusConsumer(batteryStatusSender);
         Thread batteryThread = new Thread(batteryTester);
         batteryThread.start();
         batteryTester.startTest(10);
@@ -111,44 +114,47 @@ public class Application {
         }
     }
 
-    class BatteryTestStatusSender implements Consumer<BatteryTestStatus>, WebSocketConnectionCallback {
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        BatteryTestStatusSender() {
+    class BatteryTestStatusWebSocket implements WebSocketConnectionCallback {
+        BatteryTestStatusWebSocket() {
             logger.info ("creating {}", this);
         }
-        List<WebSocketChannel> wsChannels = new ArrayList<>();
-
-        Map<String, String> broadcasts = new HashMap<>();
 
         @Override
         public void onConnect(WebSocketHttpExchange exchange, WebSocketChannel channel) {
             logger.info("Got connection {}", channel);
-            wsChannels.add(channel);
+            new BatteryTestStatusWriter(channel);
+        }
+    }
+
+    class BatteryTestStatusWriter {
+        WebSocketChannel channel;
+        BlockingQueue<BatteryTestStatus> q;
+        BatteryTestStatusWriter (WebSocketChannel channel) {
+            this.channel = channel;
+            q = new LinkedBlockingQueue<>();
+
+            Thread t = new Thread(this::thread);
+            t.setDaemon(true);
+            t.start();
+            batteryTester.addStatusConsumer(q, true);
         }
 
-        @Override
-        public void accept(BatteryTestStatus batteryTestStatus) {
-            logger.debug ("Accepted {}", batteryTestStatus);
-            broadcast("test_status", batteryTestStatus);
-        }
-
-        public void broadcast (String messageType, Object payload) {
-            WebsocketMessage w = new WebsocketMessage(messageType, payload);
-            try {
-                String j = objectMapper.writeValueAsString(w);
-                for (Iterator<WebSocketChannel> i = wsChannels.iterator(); i.hasNext(); ) {
-                    var channel = i.next();
+        void thread() {
+            ObjectMapper objectMapper = new ObjectMapper();
+            while (true) {
+                try {
+                    BatteryTestStatus s = q.take();
+                    WebsocketMessage w = new WebsocketMessage("test_status", s);
+                    String j = objectMapper.writeValueAsString(w);
                     if (channel.isOpen()) {
                         WebSockets.sendText(j, channel, null);
                     } else {
-                        logger.info ("Dropping connection {}", channel);
-                        i.remove();
+                        logger.info("Dropping connection {}", channel);
+                        batteryTester.removeStatusConsumer(q);
                     }
+                } catch (InterruptedException | JsonProcessingException e) {
+                    throw new RuntimeException(e);
                 }
-                broadcasts.put(messageType, j);
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
             }
         }
     }
