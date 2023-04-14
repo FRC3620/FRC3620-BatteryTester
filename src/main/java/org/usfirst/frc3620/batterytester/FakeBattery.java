@@ -1,4 +1,4 @@
-package org.usfirst.frc3620;
+package org.usfirst.frc3620.batterytester;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,7 @@ public class FakeBattery implements IBattery {
             double ampHourDelta = current * ((tDelta / 1000.0) / 3600.0);
             currentCapacity -= ampHourDelta;
 
-            logger.info ("voltage = {}, current = {}, tDelta = {}, ampHourDelta = {}, currentCapacity = {}", voltage, current, tDelta, ampHourDelta, currentCapacity);
+            logger.debug("voltage = {}, current = {}, tDelta = {}, ampHourDelta = {}, currentCapacity = {}", voltage, current, tDelta, ampHourDelta, currentCapacity);
 
             if (currentCapacity < 0) currentCapacity = 0;
         }

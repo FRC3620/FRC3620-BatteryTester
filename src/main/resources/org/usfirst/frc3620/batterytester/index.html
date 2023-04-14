@@ -10,8 +10,10 @@
   <title>Average Joes Battery Tester</title>
  </head>
  <body>
+  <div id="BatteryTestReading"></div>
+  <div id="BatteryTestStatus"></div>
+  <div id="BatteryStartTestMessage"></div>
   <div><canvas id="voltagechart"></canvas></div>
-  <div id="lastmessage"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.2.1/chart.umd.min.js" integrity="sha512-GCiwmzA0bNGVsp1otzTJ4LWQT2jjGJENLGyLlerlzckNI30moi2EQT0AfRI7fLYYYDKR+7hnuh35r3y1uJzugw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>  <script src="https://code.jquery.com/jquery-3.6.4.slim.min.js" integrity="sha256-a2yjHM4jnF9f54xUQakjZGaqYs/V1CYvWpoqZzC2/Bw=" crossorigin="anonymous"></script>
   <script src="ReconnectingWebsocket.js"></script>
@@ -41,13 +43,29 @@ const chartConfig = {
   type: 'line',
   data: chartData,
   options: {
+    animation: false,
     responsive: true,
+    scales: {
+      x: {
+        type: 'linear',
+        beginAtZero: true,
+        ticks: {
+          precision: 0
+        },
+        title: 'Seconds'
+      },
+      y: {
+        type: 'linear',
+        title: 'Volts'
+      },
+    },
     plugins: {
       legend: {
-        position: 'top',
+        display: false,
+        position: 'top'
       },
       title: {
-        display: true,
+        display: false,
         text: 'Current battery'
       }
     }
@@ -58,12 +76,24 @@ const voltageChart = new Chart(document.getElementById('voltagechart'), chartCon
 var ws = new ReconnectingWebSocket("ws://127.0.0.1:8080/battery");
 ws.debug = true;
 ws.onmessage = function (event) {
-    var messageFromServer = event;
-    $('#lastmessage').text(event.data);
-    var data = JSON.parse(event.data);
-    labels.push(data.payload.time);
-    voltages.push(data.payload.voltage);
-    voltageChart.update();
+  var data = JSON.parse(event.data);
+  $('#' + data.messageType).text(event.data);
+  switch (data.messageType) {
+    case "BatteryTestReading":
+      labels.push(data.payload.time);
+      voltages.push(data.payload.voltage);
+      amperages.push(data.payload.amperage);
+      voltageChart.update();
+      break;
+    case "BatteryTestStatus":
+      break;
+    case "BatteryStartTestMessage":
+      labels.length = 0;
+      voltages.length = 0;
+      amperages.length = 0;
+      voltageChart.update();
+      break;
+  }
 }
 
 ws.onopen = function (event) {

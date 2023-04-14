@@ -1,4 +1,4 @@
-package org.usfirst.frc3620;
+package org.usfirst.frc3620.batterytester;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,7 @@ public class BatteryTester implements Runnable {
 
     List<BlockingQueue<WSMessage>> statusQueues = new ArrayList<>();
 
-    List<WSMessage.BatteryTestReadings> testSamples = new ArrayList<>();
+    List<WSMessage.BatteryTestReading> testSamples = new ArrayList<>();
 
     public BatteryTester (IBattery battery)  {
         this.battery = battery;
@@ -55,7 +55,7 @@ public class BatteryTester implements Runnable {
                 if (t0 != null) {
                     tDelta = now - t0;
                 }
-                WSMessage.BatteryTestReadings batteryTestStatus = new WSMessage.BatteryTestReadings(tDelta / 1000.0, battery.getBatteryStatus());
+                WSMessage.BatteryTestReading batteryTestStatus = new WSMessage.BatteryTestReading(tDelta / 1000.0, battery.getBatteryStatus());
 
                 synchronized (waitLock) {
                     testSamples.add(batteryTestStatus);
@@ -123,6 +123,7 @@ public class BatteryTester implements Runnable {
             if (catchup) {
                 try {
                     q.put(new WSMessage.BatteryTestStatus(status));
+                    q.put(new WSMessage.BatteryStartTestMessage());
 
                     for (var ts : testSamples) {
                         q.put(ts);

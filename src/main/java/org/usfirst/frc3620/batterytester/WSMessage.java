@@ -1,10 +1,12 @@
-package org.usfirst.frc3620;
+package org.usfirst.frc3620.batterytester;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.util.StringJoiner;
 
+@JsonSerialize
 public class WSMessage {
   static ObjectMapper objectMapper = new ObjectMapper();
 
@@ -40,16 +42,16 @@ public class WSMessage {
     }
   }
 
-  public static class BatteryTestReadings extends WSMessage {
+  public static class BatteryTestReading extends WSMessage {
     private final double time, voltage, amperage;
 
-    public BatteryTestReadings(double t, double v, double a) {
+    public BatteryTestReading(double t, double v, double a) {
       this.time = t;
       this.voltage = v;
       this.amperage = a;
     }
 
-    public BatteryTestReadings(double t, BatteryReadings batteryStatus) {
+    public BatteryTestReading(double t, BatteryReadings batteryStatus) {
       this(t, batteryStatus.getVoltage(), batteryStatus.getAmperage());
     }
 

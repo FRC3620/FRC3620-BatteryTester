@@ -1,4 +1,4 @@
-package org.usfirst.frc3620;
+package org.usfirst.frc3620.batterytester;
 
 import org.junit.Test;
 

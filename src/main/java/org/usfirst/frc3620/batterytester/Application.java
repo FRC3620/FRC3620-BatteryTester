@@ -1,4 +1,4 @@
-package org.usfirst.frc3620;
+package org.usfirst.frc3620.batterytester;
 
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -36,7 +36,7 @@ public class Application {
 
         ResourceManager contentHandler = new ClassPathResourceManager(getClass().getClassLoader(), getClass().getPackage());
         // the following line is so we have hot reload when testing
-        contentHandler = new PathResourceManager(Paths.get("src/main/resources/org/usfirst/frc3620"));
+        contentHandler = new PathResourceManager(Paths.get("src/main/resources/org/usfirst/frc3620/batterytester"));
 
         HttpHandler handler = null;
         if (false) {
