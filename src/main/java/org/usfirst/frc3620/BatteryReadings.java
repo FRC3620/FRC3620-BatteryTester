@@ -2,10 +2,10 @@ package org.usfirst.frc3620;
 
 import java.util.StringJoiner;
 
-public class BatteryStatus {
+public class BatteryReadings {
     private final double voltage;
     private final double amperage;
-    BatteryStatus (double v, double a) {
+    BatteryReadings(double v, double a) {
         voltage = v;
         amperage = a;
     }
@@ -20,7 +20,7 @@ public class BatteryStatus {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", BatteryStatus.class.getSimpleName() + "[", "]")
+        return new StringJoiner(", ", BatteryReadings.class.getSimpleName() + "[", "]")
                 .add("voltage=" + voltage)
                 .add("amperage=" + amperage)
                 .toString();

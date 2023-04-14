@@ -5,7 +5,7 @@ import java.util.Collection;
 public interface IBattery {
     public BatteryInfo getBatteryInfo();
 
-    public BatteryStatus getBatteryStatus();
+    public BatteryReadings getBatteryStatus();
 
     public void setLoad (double amperage);
 
