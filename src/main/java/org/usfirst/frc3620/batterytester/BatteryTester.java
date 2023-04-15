@@ -4,28 +4,36 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.concurrent.BlockingQueue;
 
 public class BatteryTester implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     enum Status {
-        OFF, RUNNING, PAUSED, DETERMINING_RINT
+        OFF, RUNNING
+    }
+
+    enum InternalStatus {
+        DETERMINING_RINT_1, LOADED, DETERMINING_RINT_2
     }
 
     Status status = Status.OFF;
+
+    InternalStatus internalStatus = InternalStatus.DETERMINING_RINT_1;
 
     IBattery battery;
     FakeBattery fakeBattery;
 
     double loadAmperage = 0;
 
-    final Object waitLock = new Object();
+    final Object testThreadWaitLock = new Object();
 
-    List<BlockingQueue<WSMessage>> statusQueues = new ArrayList<>();
+    final List<BlockingQueue<WSMessage>> statusQueues = new ArrayList<>();
 
-    List<WSMessage.BatteryTestReading> testSamples = new ArrayList<>();
+    final List<BatteryTestReading> testSamples = new ArrayList<>();
 
     public BatteryTester (IBattery battery)  {
         this.battery = battery;
@@ -39,14 +47,6 @@ public class BatteryTester implements Runnable {
     @Override
     public void run() {
         while (true) {
-            synchronized (waitLock) {
-                try {
-                    waitLock.wait(1000);
-                } catch (InterruptedException ignored) {
-
-                }
-
-            }
             if (fakeBattery != null) fakeBattery.update();
 
             if (status == Status.RUNNING) {
@@ -55,17 +55,38 @@ public class BatteryTester implements Runnable {
                 if (t0 != null) {
                     tDelta = now - t0;
                 }
-                WSMessage.BatteryTestReading batteryTestStatus = new WSMessage.BatteryTestReading(tDelta / 1000.0, battery.getBatteryStatus());
 
-                synchronized (waitLock) {
-                    testSamples.add(batteryTestStatus);
-                    sendToAll(batteryTestStatus);
+                BatteryTestReading batteryTestReading = new BatteryTestReading(tDelta / 1000.0, battery.getBatteryStatus());
+
+                synchronized (testSamples) {
+                    testSamples.add(batteryTestReading);
+                    sendToAll(new WSMessage.BatteryTestReading(batteryTestReading, true));
                 }
 
-                if (batteryTestStatus.getVoltage() < 10.7) {
+                if (internalStatus == InternalStatus.DETERMINING_RINT_1) {
+                    internalStatus = InternalStatus.LOADED;
+                    battery.setLoad(loadAmperage);
+                }
+
+                if (internalStatus == InternalStatus.DETERMINING_RINT_2) {
                     status = Status.OFF;
-                    battery.setLoad(0);
                     sendStatus();
+                }
+
+                if (batteryTestReading.getVoltage() < 10.7) {
+                    internalStatus = InternalStatus.DETERMINING_RINT_2;
+                    battery.setLoad(0);
+                }
+
+            }
+
+            sendToAll(new WSMessage.TickTock()); // help determine dropped connections
+
+            synchronized (testThreadWaitLock) {
+                try {
+                    testThreadWaitLock.wait(1000);
+                } catch (InterruptedException ignored) {
+
                 }
             }
         }
@@ -76,11 +97,13 @@ public class BatteryTester implements Runnable {
     }
 
     void sendToAll (WSMessage w) {
-        for (var q : statusQueues) {
-            try {
-                q.put(w);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+        synchronized (statusQueues) {
+            for (var q : statusQueues) {
+                try {
+                    q.put(w);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
@@ -96,12 +119,12 @@ public class BatteryTester implements Runnable {
         }
         if (status == Status.OFF) {
             t0 = System.currentTimeMillis();
-            battery.setLoad(loadAmperage);
             testSamples.clear();
         }
+        internalStatus = InternalStatus.DETERMINING_RINT_1;
         status = Status.RUNNING;
         sendStatus();
-        sendToAll(new WSMessage.BatteryStartTestMessage());
+        sendToAll(WSMessage.START_BATTERY_TEST);
         bumpThread();
     }
 
@@ -113,20 +136,26 @@ public class BatteryTester implements Runnable {
     }
 
     void bumpThread() {
-        synchronized (waitLock) {
-            waitLock.notify();
+        synchronized (testThreadWaitLock) {
+            testThreadWaitLock.notify();
         }
     }
 
     public void addStatusConsumer (BlockingQueue<WSMessage> q, boolean catchup) {
-        synchronized (waitLock) {
+        synchronized (statusQueues) {
             if (catchup) {
                 try {
                     q.put(new WSMessage.BatteryTestStatus(status));
-                    q.put(new WSMessage.BatteryStartTestMessage());
+                    q.put(WSMessage.START_BATTERY_TEST);
 
-                    for (var ts : testSamples) {
-                        q.put(ts);
+                    synchronized (testSamples) {
+                        Iterator<BatteryTestReading> i = testSamples.iterator();
+                        while (i.hasNext()) {
+                            BatteryTestReading r = i.next();
+                            boolean shouldUpdate = ! i.hasNext(); // don't update if more coming
+                            WSMessage catchupMessage = new WSMessage.BatteryTestReading(r, shouldUpdate);
+                            q.put(catchupMessage);
+                        }
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -137,7 +166,7 @@ public class BatteryTester implements Runnable {
     }
 
     public void removeStatusConsumer (BlockingQueue<WSMessage> q) {
-        synchronized (waitLock) {
+        synchronized (statusQueues) {
             statusQueues.remove(q);
         }
     }
@@ -146,4 +175,43 @@ public class BatteryTester implements Runnable {
         logger.info ("shutdown hook activated, shutting off load");
         battery.setLoad(0);
     }
+
+    public static class BatteryTestReading {
+        private final double time, voltage, amperage;
+
+        public BatteryTestReading(double t, double v, double a) {
+            this.time = t;
+            this.voltage = v;
+            this.amperage = a;
+        }
+
+        public BatteryTestReading(double t, BatteryReadings batteryStatus) {
+            this(t, batteryStatus.getVoltage(), batteryStatus.getAmperage());
+        }
+
+        /**
+         * @return returns epoch millisecond time of battery reading
+         */
+        public double getTime() {
+            return time;
+        }
+
+        public double getAmperage() {
+            return amperage;
+        }
+
+        public double getVoltage() {
+            return voltage;
+        }
+
+        @Override
+        public String toString() {
+            return new StringJoiner(", ", BatteryReadings.class.getSimpleName() + "[", "]")
+                    .add("time=" + time)
+                    .add("voltage=" + getVoltage())
+                    .add("amperage=" + getAmperage())
+                    .toString();
+        }
+    }
+
 }

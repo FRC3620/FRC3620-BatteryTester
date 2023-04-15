@@ -88,6 +88,7 @@ public class Application {
     }
 
     class BatteryTestStatusWriter {
+        Logger logger = LoggerFactory.getLogger(getClass());
         WebSocketChannel channel;
         BlockingQueue<WSMessage> q;
         BatteryTestStatusWriter (WebSocketChannel channel) {
@@ -101,11 +102,14 @@ public class Application {
         }
 
         void thread() {
+            logger.info ("Starting a writer for {}", channel);
             while (true) {
                 try {
-                    WSMessage s = q.take();
+                    WSMessage m = q.take();
                     if (channel.isOpen()) {
-                        WebSockets.sendText(s.json(), channel, null);
+                        String s = m.json();
+                        logger.debug("Writing to {}: {}", channel, s);
+                        WebSockets.sendText(s, channel, null);
                     } else {
                         logger.info("Dropping connection {}", channel);
                         batteryTester.removeStatusConsumer(q);

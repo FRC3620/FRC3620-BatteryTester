@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import java.util.Date;
 import java.util.StringJoiner;
 
 @JsonSerialize
@@ -43,45 +44,60 @@ public class WSMessage {
   }
 
   public static class BatteryTestReading extends WSMessage {
-    private final double time, voltage, amperage;
+    private final BatteryTester.BatteryTestReading reading;
+    private final boolean update;
 
-    public BatteryTestReading(double t, double v, double a) {
-      this.time = t;
-      this.voltage = v;
-      this.amperage = a;
-    }
-
-    public BatteryTestReading(double t, BatteryReadings batteryStatus) {
-      this(t, batteryStatus.getVoltage(), batteryStatus.getAmperage());
+    public BatteryTestReading(BatteryTester.BatteryTestReading reading, boolean update) {
+      this.reading = reading;
+      this.update = update;
     }
 
     /**
      * @return returns epoch millisecond time of battery reading
      */
     public double getTime() {
-      return time;
+      return reading.getTime();
     }
 
     public double getAmperage() {
-      return amperage;
+      return reading.getAmperage();
     }
 
     public double getVoltage() {
-      return voltage;
+      return reading.getVoltage();
+    }
+
+    public boolean getUpdate() {
+      return update;
     }
 
     @Override
     public String toString() {
       return new StringJoiner(", ", BatteryReadings.class.getSimpleName() + "[", "]")
-        .add("time=" + time)
+        .add("time=" + getTime())
         .add("voltage=" + getVoltage())
         .add("amperage=" + getAmperage())
+        .add("catchup=" + getUpdate())
         .toString();
     }
 
   }
 
-  public static class BatteryStartTestMessage extends WSMessage {
-    public BatteryStartTestMessage() { }
+  public static WSMessage START_BATTERY_TEST = new StartBatteryTest();
+  private static class StartBatteryTest extends WSMessage {
+    public StartBatteryTest() { }
+  }
+
+  public static class TickTock extends WSMessage {
+    private Date now = new Date();
+    public TickTock() { }
+
+    public Date getNow() {
+      return now;
+    }
+
+    public String getHuman() {
+      return now.toString();
+    }
   }
 }

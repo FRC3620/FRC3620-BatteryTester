@@ -13,6 +13,7 @@
 
     <Loggers>
         <Logger name="org.usfirst.frc3620.FakeBattery" level="info" additivity="true"/>
+        <Logger name="org.usfirst.frc3620.Application$BatteryTestStatusWriter" level="debug" additivity="true"/>
         <Root level="info">
             <AppenderRef ref="console"/>
         </Root>
