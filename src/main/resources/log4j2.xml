@@ -12,8 +12,10 @@
     </Appenders>
 
     <Loggers>
-        <Logger name="org.usfirst.frc3620.FakeBattery" level="info" additivity="true"/>
-        <Logger name="org.usfirst.frc3620.Application$BatteryTestStatusWriter" level="debug" additivity="true"/>
+        <Logger name="org.usfirst.frc3620.batterytester.Application$BatteryTestStatusWriter" level="info" additivity="true"/>
+        <Logger name="org.usfirst.frc3620.batterytester.BatteryTester" level="info" additivity="true"/>
+        <Logger name="org.usfirst.frc3620.batterytester.FakeBattery" level="info" additivity="true"/>
+
         <Root level="info">
             <AppenderRef ref="console"/>
         </Root>

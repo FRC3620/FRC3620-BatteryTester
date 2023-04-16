@@ -11,6 +11,28 @@ import java.util.StringJoiner;
 public class WSMessage {
   static ObjectMapper objectMapper = new ObjectMapper();
 
+  /**
+   * run Jackson through it's paces. Do this early so that the battery testing thread does not
+   * take a significant delay the first time through (initial invocation of writeValueAsString
+   * loads a *lot* of classes.
+   */
+  static public void prime() {
+    // get classes loaded early
+    WSMessage w = new WSMessage.BatteryTestReading(new BatteryTester.BatteryTestReading(0, 0, 0, 0, 0), true);
+    try {
+      objectMapper.writeValueAsString(w);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static class Dummy {
+    public String s;
+    public double d;
+    public int i;
+    public boolean b;
+  }
+
   public String json() {
     try {
       return objectMapper.writeValueAsString(new M(this));

@@ -32,6 +32,7 @@ public class Application {
     }
 
     public void buildAndStartServer(int port, String host) {
+        WSMessage.prime();
         BatteryTestStatusWebSocket batteryStatusSender = new BatteryTestStatusWebSocket();
 
         ResourceManager contentHandler = new ClassPathResourceManager(getClass().getClassLoader(), getClass().getPackage());
@@ -61,7 +62,6 @@ public class Application {
         IBattery battery = new FakeBattery(bi);
 
         batteryTester = new BatteryTester(battery);
-        // batteryTester.addStatusConsumer(batteryStatusSender);
         Thread batteryThread = new Thread(batteryTester);
         batteryThread.start();
         batteryTester.startTest(200.0);
