@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="h-100">
  <head>
   <!-- Required meta tags -->
   <meta charset="utf-8">
@@ -10,37 +10,42 @@
 .x-wrap {
  overflow-wrap: break-word;
 }
+
+/* need this for fixed navbar */
+body { padding-top: 40px; }
+
+.bottom-part {
+    /* height: calc(100% - max(96px, 20%)); */
+    height: calc(100% - 140px);
+}
   </style>
 
   <title>Average Joes Battery Tester</title>
  </head>
- <body>
-  <div class="container-fluid">
-   <div class="row">
-    <div class="col-3 x-wrap"><p id="BatteryTestReading"></p></div>
-    <div class="col-3 x-wrap"><p id="BatteryTestStatus"></p></div>
-    <div class="col-3 x-wrap"><p id="StartBatteryTest"></p></div>
-    <div class="col-3 x-wrap"><p id="TickTock"></p></div>
-   </div>
-   <div class="row">
-    <div class="col-lg-2">
-     Server connection: <div id="connection-state">Disconnected.</div>
+ <body class="h-100">
+  <nav class="navbar navbar-expand-lg bg-light fixed-top">
+   <div class="container-fluid">
+    <div class="d-flex">Server connection:&nbsp;<div id="connection-state">Disconnected.</div></div>
+    <div class="d-flex">
+      Status:&nbsp;<div id="test-status"></div>
+      &nbsp;&nbsp;&nbsp;&nbsp;
+      V:&nbsp;<div id="test-voltage"></div>
+      &nbsp;&nbsp;&nbsp;&nbsp;
+      A:&nbsp;<div id="test-amperage"></div>
     </div>
-    <div class="col-lg-2">
-     Test Status: <div id="test-status">OFF</div>
-    </div>
-    <div class="col-lg-2">
-     Voltage: <div id="test-voltage"></div>
-    </div>
-    <div class="col-lg-2">
-     Amperage: <div id="test-amperage"></div>
-    </div>
-    <div class="col-lg-2">
-     <div id="time-human"></div>
+    <div class="d-flex">
+     <div id="time-human">&nbsp;</div>
     </div>
    </div>
-   <div class="row">
-    <div class="col-lg-1"></div>
+  </nav>
+  <div class="h-100 container-fluid d-flex flex-column">
+   <div class="row flex-grow-1 border">
+    <div class="col-lg-1">
+     <div class="z-disable-if-disconnected">
+      <button class="btn btn-success">Start</button>
+      <button class="btn btn-danger">Stop</button>
+     </div>
+    </div>
     <div class="col-lg-10"><canvas id="voltagechart"></canvas></div>
     <div class="col-lg-1"></div>
    </div>
@@ -85,6 +90,7 @@ const chartConfig = {
   options: {
     animation: false,
     responsive: true,
+    maintainAspectRatio: false,
     scales: {
       x: {
         type: 'linear',
@@ -158,12 +164,29 @@ ws.onmessage = function (event) {
 }
 
 ws.onopen = function (event) {
- $('#connection-state').text("Connected.")
+ showConnect();
 }
 
 ws.onclose = function (event) {
- $('#connection-state').text("Disconnected.")
+ showDisconnect();
 }
+
+// these need work; they will get squirrelly if we disable button based on tests start and stop
+function showConnect() {
+ $(".z-disable-if-disconnected :input").attr("disabled", false);
+ $('#connection-state').text("Connected.")
+ $('#connection-state').removeClass("text-danger");
+ $('#connection-state').addClass("text-success");
+}
+
+function showDisconnect() {
+ $(".z-disable-if-disconnected :input").attr("disabled", true);
+ $('#connection-state').text("Disconnected.");
+ $('#connection-state').removeClass("text-success");
+ $('#connection-state').addClass("text-danger");
+}
+
+showDisconnect();
 
   </script>
  </body>
