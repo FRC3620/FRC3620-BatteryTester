@@ -51,6 +51,11 @@ public class FakeBattery implements IBattery {
     }
 
     @Override
+    public double getLoad() {
+        return currentLoad;
+    }
+
+    @Override
     public Collection<Double> getPossibleLoads() {
         return possibleLoads;
     }

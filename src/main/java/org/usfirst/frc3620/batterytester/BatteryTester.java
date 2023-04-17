@@ -13,7 +13,7 @@ public class BatteryTester implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     enum Status {
-        OFF, RUNNING
+        OFF, RUNNING, PAUSED
     }
 
     enum InternalStatus {
@@ -56,7 +56,7 @@ public class BatteryTester implements Runnable {
             long t00 = now;
             if (fakeBattery != null) fakeBattery.update();
 
-            if (status == Status.RUNNING) {
+            if (status == Status.RUNNING || status == Status.PAUSED) {
                 long tDelta = now;
                 if (t0 != null) {
                     tDelta = now - t0;
@@ -88,9 +88,9 @@ public class BatteryTester implements Runnable {
                 if (internalStatus == InternalStatus.DETERMINING_RINT_1) {
                     internalStatus = InternalStatus.LOADED;
                     battery.setLoad(loadAmperage);
-                }
-
-                if (internalStatus == InternalStatus.DETERMINING_RINT_2) {
+                } else if (internalStatus == InternalStatus.LOADED) {
+                    if (status != Status.PAUSED) battery.setLoad(loadAmperage);
+                } else if (internalStatus == InternalStatus.DETERMINING_RINT_2) {
                     status = Status.OFF;
                     sendStatus();
                 }
@@ -116,6 +116,10 @@ public class BatteryTester implements Runnable {
         }
     }
 
+    public Status getStatus() {
+        return status;
+    }
+
     void sendStatus() {
         sendToAll(new WSMessage.BatteryTestStatus(status));
     }
@@ -134,10 +138,13 @@ public class BatteryTester implements Runnable {
 
     Long t0 = null;
 
-    public void startTest() {
-        startTest(null);
+    public boolean startTest() {
+        return startTest(null);
     }
-    public void startTest (Double amperage) {
+    public boolean startTest (Double amperage) {
+        if (status == Status.RUNNING) {
+            return false;
+        }
         if (amperage != null) {
             loadAmperage = amperage;
         }
@@ -146,20 +153,38 @@ public class BatteryTester implements Runnable {
             testSamples.clear();
             vaH = 0.0;
             aH = 0.0;
+            sendToAll(WSMessage.START_BATTERY_TEST);
+        } else if (status == Status.PAUSED) {
+            // nothing to do
         }
         internalStatus = InternalStatus.DETERMINING_RINT_1;
         status = Status.RUNNING;
         sendStatus();
-        sendToAll(WSMessage.START_BATTERY_TEST);
         logger.info("bumping the collection thread");
         bumpCollectionThread();
+        return true;
     }
 
-    public void stopTest () {
-        status = Status.OFF;
+    public boolean pauseTest() {
+        if (status != Status.RUNNING) {
+            return false;
+        }
+        status = Status.PAUSED;
         battery.setLoad(0.0);
         sendStatus();
         bumpCollectionThread();
+        return true;
+    }
+
+    public boolean stopTest () {
+        if (status == Status.OFF) {
+            return false;
+        }
+        internalStatus = InternalStatus.DETERMINING_RINT_2;
+        battery.setLoad(0.0);
+        sendStatus();
+        bumpCollectionThread();
+        return true;
     }
 
     void bumpCollectionThread() {

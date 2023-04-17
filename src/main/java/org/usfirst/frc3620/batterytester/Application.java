@@ -2,10 +2,13 @@ package org.usfirst.frc3620.batterytester;
 
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
+import io.undertow.util.Headers;
+import io.undertow.util.StatusCodes;
 import io.undertow.websockets.WebSocketConnectionCallback;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
@@ -39,16 +42,11 @@ public class Application {
         // the following line is so we have hot reload when testing
         contentHandler = new PathResourceManager(Paths.get("src/main/resources/org/usfirst/frc3620/batterytester"));
 
-        HttpHandler handler = null;
-        if (false) {
-            handler = new RoutingHandler()
-                .get("/battery", websocket(batteryStatusSender))
+        RoutingHandler routingHandler = new RoutingHandler()
+                .get("/test/{verb}", this::testHandler)
                 .get("/", resource(contentHandler).addWelcomeFiles("index.html"));
-        } else {
-            handler = path()
-                .addPrefixPath("/battery", websocket(batteryStatusSender))
-                .addPrefixPath("/", resource(contentHandler).addWelcomeFiles("index.html"));
-        }
+        HttpHandler handler = path(routingHandler)
+                .addPrefixPath("/battery", websocket(batteryStatusSender));
 
         server = Undertow.builder()
                 .addHttpListener(port, host)
@@ -141,6 +139,43 @@ public class Application {
     public void stopServer() {
         if (server != null) {
             server.stop();
+        }
+    }
+
+    void testHandler(HttpServerExchange httpServerExchange) {
+        String verb = null;
+        try {
+            verb = httpServerExchange.getQueryParameters().get("verb").getFirst();
+        } catch (Exception e) {
+            httpServerExchange.setStatusCode(StatusCodes.BAD_REQUEST);
+            return;
+        }
+        logger.info("got {}, action {}", httpServerExchange, verb);
+        boolean ok = true;
+
+        BatteryTester.Status status = batteryTester.getStatus();
+        boolean rv = false;
+        if (verb.equalsIgnoreCase("start")) {
+            rv = batteryTester.startTest();
+        } else if (verb.equalsIgnoreCase("pause")) {
+            rv = batteryTester.pauseTest();
+        } else if (verb.equalsIgnoreCase("stop")) {
+            rv = batteryTester.stopTest();
+        } else {
+            httpServerExchange.setStatusCode(StatusCodes.NOT_FOUND);
+            httpServerExchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+            httpServerExchange.getResponseSender().send("unknown verb " + verb);
+            return;
+        }
+        if (rv) {
+            httpServerExchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+            httpServerExchange.getResponseSender().send("ok, status = " + batteryTester.getStatus().toString());
+            return;
+        } else {
+            httpServerExchange.setStatusCode(StatusCodes.BAD_REQUEST);
+            httpServerExchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+            httpServerExchange.getResponseSender().send("cannot " + verb + ", current state is " + batteryTester.getStatus().toString());
+            return;
         }
     }
 }

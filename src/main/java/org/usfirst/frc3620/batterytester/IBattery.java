@@ -9,5 +9,7 @@ public interface IBattery {
 
     public void setLoad (double amperage);
 
+    public double getLoad ();
+
     public Collection<Double> getPossibleLoads();
 }
