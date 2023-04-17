@@ -42,11 +42,10 @@ public class Application {
         // the following line is so we have hot reload when testing
         contentHandler = new PathResourceManager(Paths.get("src/main/resources/org/usfirst/frc3620/batterytester"));
 
-        RoutingHandler routingHandler = new RoutingHandler()
-                .get("/test/{verb}", this::testHandler)
-                .get("/", resource(contentHandler).addWelcomeFiles("index.html"));
-        HttpHandler handler = path(routingHandler)
-                .addPrefixPath("/battery", websocket(batteryStatusSender));
+        HttpHandler handler = path()
+                .addPrefixPath("/battery", websocket(batteryStatusSender))
+                .addPrefixPath("/test", this::testHandler)
+                .addPrefixPath("/", resource(contentHandler).addWelcomeFiles("index.html"));
 
         server = Undertow.builder()
                 .addHttpListener(port, host)
@@ -143,14 +142,9 @@ public class Application {
     }
 
     void testHandler(HttpServerExchange httpServerExchange) {
-        String verb = null;
-        try {
-            verb = httpServerExchange.getQueryParameters().get("verb").getFirst();
-        } catch (Exception e) {
-            httpServerExchange.setStatusCode(StatusCodes.BAD_REQUEST);
-            return;
-        }
-        logger.info("got {}, action {}", httpServerExchange, verb);
+        logger.info("testHandler hit: {} {} {}", httpServerExchange, httpServerExchange.getQueryParameters(), httpServerExchange.getPathParameters());
+        String verb = httpServerExchange.getRelativePath().substring(1);
+        logger.info("got {}, verb {}", httpServerExchange, verb);
         boolean ok = true;
 
         BatteryTester.Status status = batteryTester.getStatus();
