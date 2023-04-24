@@ -1,6 +1,6 @@
 package org.usfirst.frc3620.batterytester;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class FakeBatteryTest {
 
@@ -20,7 +20,8 @@ public class FakeBatteryTest {
             System.out.println (t + ": voltage = " + v + ", capacity = " + b.currentCapacity);
             if (v < 11.7) break;
 
-            b.update(++t);
+            t += 1000;
+            b.update(t);
         }
         System.out.println ("total amp hours = " + ampHours);
     }
