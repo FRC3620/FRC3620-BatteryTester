@@ -1,9 +1,10 @@
 plugins {
     id 'java'
+    id 'org.hidetake.ssh' version '2.11.2'
 }
 
-group 'org.usfirst.frc3620.batterytester'
-version '1.0-SNAPSHOT'
+//group 'org.usfirst.frc3620.battery-tester'
+//version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -29,4 +30,24 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+remotes {
+    teststand {
+        host = 'mqtt.local'
+        user = 'pi'
+        knownHosts = allowAnyHosts
+        identity = file('ssh/private')
+    }
+}
+
+task deploy {
+    doLast {
+        ssh.run {
+            session(remotes.teststand) {
+                put from: "$buildDir/libs/FRC3620-BatteryTester.jar", into: './'
+                execute 'ls'
+            }
+        }
+    }
 }
