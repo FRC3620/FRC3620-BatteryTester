@@ -12,4 +12,6 @@ public interface IBattery {
     public double getLoad ();
 
     public Collection<Double> getPossibleLoads();
+
+    default public void close() { }
 }

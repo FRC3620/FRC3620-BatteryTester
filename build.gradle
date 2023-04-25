@@ -12,6 +12,7 @@ repositories {
 
 ext {
     log4jVersion = '2.20.0'
+    pi4jVersion = '2.3.0'
 }
 
 dependencies {
@@ -26,6 +27,9 @@ dependencies {
     testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion"
 
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.0'
+
+    implementation "com.pi4j:pi4j-plugin-raspberrypi:$pi4jVersion"
+    implementation "com.pi4j:pi4j-plugin-pigpio:$pi4jVersion"
 }
 
 test {
