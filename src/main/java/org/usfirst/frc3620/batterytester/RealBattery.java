@@ -7,7 +7,6 @@ import java.util.Collection;
 
 public class RealBattery implements IBattery {
   Context pi4j;
-  Ads
 
   public RealBattery() {
     pi4j = Pi4J.newAutoContext();

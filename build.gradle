@@ -10,6 +10,15 @@ repositories {
     mavenCentral()
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs 'src'
+            srcDirs('pi4j-example-components/src/main/java')
+        }
+    }
+}
+
 ext {
     log4jVersion = '2.20.0'
     pi4jVersion = '2.3.0'
@@ -30,6 +39,7 @@ dependencies {
 
     implementation "com.pi4j:pi4j-plugin-raspberrypi:$pi4jVersion"
     implementation "com.pi4j:pi4j-plugin-pigpio:$pi4jVersion"
+    implementation "com.pi4j:pi4j-plugin-linuxfs:$pi4jVersion"
 }
 
 test {
@@ -52,6 +62,23 @@ task deploy {
                 put from: "$buildDir/libs/FRC3620-BatteryTester.jar", into: './'
                 execute 'ls'
             }
+        }
+    }
+}
+
+// https://www.baeldung.com/gradle-source-sets
+task printSourceSetInformation(){
+
+    doLast{
+        sourceSets.each { srcSet ->
+            println "["+srcSet.name+"]"
+            print "-->Source directories: "+srcSet.allJava.srcDirs+"\n"
+            print "-->Output directories: "+srcSet.output.classesDirs.files+"\n"
+            print "-->Compile classpath:\n"
+            srcSet.compileClasspath.files.each {
+                print "  "+it.path+"\n"
+            }
+            println ""
         }
     }
 }
