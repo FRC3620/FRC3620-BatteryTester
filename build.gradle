@@ -10,11 +10,19 @@ repositories {
     mavenCentral()
 }
 
+//def pi4jSet = objects.sourceDirectorySet("pi4j", "pi4j")
+//pi4jSet.srcDir('pi4j-example-components/src/main/java')
+
+compileJava {
+    options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+}
+
 sourceSets {
     main {
         java {
-            srcDirs 'src'
-            srcDirs('pi4j-example-components/src/main/java')
+            srcDirs 'src/main/java'
+            srcDirs 'pi4j-example-components/src/main/java/com/pi4j/catalog/components'
+            //source(pi4jSet)
         }
     }
 }

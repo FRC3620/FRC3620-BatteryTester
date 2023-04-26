@@ -1,0 +1,3 @@
+[submodule "pi4j-example-components"]
+	path = pi4j-example-components
+	url = https://github.com/fovea1959/pi4j-example-components.git
