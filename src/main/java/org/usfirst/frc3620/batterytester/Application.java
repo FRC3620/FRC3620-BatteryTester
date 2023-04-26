@@ -38,9 +38,13 @@ public class Application {
         WSMessage.prime();
         BatteryTestStatusWebSocket batteryStatusSender = new BatteryTestStatusWebSocket();
 
-        ResourceManager contentHandler = new ClassPathResourceManager(getClass().getClassLoader(), getClass().getPackage());
-        // the following line is so we have hot reload when testing
-        contentHandler = new PathResourceManager(Paths.get("src/main/resources/org/usfirst/frc3620/batterytester"));
+        ResourceManager contentHandler;
+        if (isRaspbian()) {
+            contentHandler = new ClassPathResourceManager(getClass().getClassLoader(), getClass().getPackage());
+        } else {
+            // the following line is so we have hot reload when testing
+            contentHandler = new PathResourceManager(Paths.get("src/main/resources/org/usfirst/frc3620/batterytester"));
+        }
 
         HttpHandler handler = path()
                 .addPrefixPath("/battery", websocket(batteryStatusSender))
@@ -54,9 +58,15 @@ public class Application {
                 .build();
         server.start();
 
-        BatteryInfo bi = new BatteryInfo();
-        bi.nominalCapacity = 18.2;
-        IBattery battery = new FakeBattery(bi);
+        IBattery battery;
+        if (isRaspbian()) {
+            battery = new RealBattery();
+            new SN3218(1);
+        } else {
+            BatteryInfo bi = new BatteryInfo();
+            bi.nominalCapacity = 18.2;
+            battery = new FakeBattery(bi);
+        }
 
         batteryTester = new BatteryTester(battery);
         Thread batteryThread = new Thread(batteryTester);
@@ -171,5 +181,10 @@ public class Application {
             httpServerExchange.getResponseSender().send("cannot " + verb + ", current state is " + batteryTester.getStatus().toString());
             return;
         }
+    }
+
+    boolean isRaspbian() {
+        String OS = System.getProperty("os.name").toLowerCase();
+        return OS.contains("nux"); // really bad hack
     }
 }
