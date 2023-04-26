@@ -139,23 +139,20 @@ public class BatteryTester implements Runnable {
 
     Long t0 = null;
 
-    public boolean startTest() {
-        return startTest(null);
-    }
-    public boolean startTest (Double amperage) {
+    public boolean startTest () {
         if (status == Status.RUNNING) {
+            logger.info ("tried to start test, but already running");
             return false;
         }
-        if (amperage != null) {
-            loadAmperage = amperage;
-        }
         if (status == Status.OFF) {
+            logger.info ("starting test, load = {}", loadAmperage);
             t0 = System.currentTimeMillis();
             testSamples.clear();
             vaH = 0.0;
             aH = 0.0;
             sendToAll(WSMessage.START_BATTERY_TEST);
         } else if (status == Status.PAUSED) {
+            logger.info ("resuming test, load = {}", loadAmperage);
             // nothing to do
         }
         internalStatus = InternalStatus.DETERMINING_RINT_1;
@@ -164,6 +161,10 @@ public class BatteryTester implements Runnable {
         logger.info("bumping the collection thread");
         bumpCollectionThread();
         return true;
+    }
+
+    public void setLoadAmperage(double a) {
+        loadAmperage = a;
     }
 
     public boolean pauseTest() {

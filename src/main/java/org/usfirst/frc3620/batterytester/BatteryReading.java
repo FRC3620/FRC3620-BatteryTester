@@ -5,9 +5,11 @@ import java.util.StringJoiner;
 public class BatteryReading {
     private final double voltage;
     private final double amperage;
-    BatteryReading(double v, double a) {
+    private final String loadDescription;
+    BatteryReading(double v, double a, String ld) {
         voltage = v;
         amperage = a;
+        loadDescription = ld;
     }
 
     public double getVoltage() {
@@ -18,11 +20,16 @@ public class BatteryReading {
         return amperage;
     }
 
+    public String getLoadDescription() {
+        return loadDescription;
+    }
+
     @Override
     public String toString() {
         return new StringJoiner(", ", BatteryReading.class.getSimpleName() + "[", "]")
                 .add("voltage=" + voltage)
                 .add("amperage=" + amperage)
+                .add("load=" + loadDescription)
                 .toString();
     }
 }

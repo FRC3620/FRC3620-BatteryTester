@@ -28,7 +28,7 @@ public class RealBattery implements IBattery {
   public BatteryReading getBatteryReading() {
     double v = automationHat.getAdsValue(1);
     double a = automationHat.getAdsValue(2);
-    BatteryReading rv = new BatteryReading(v, a);
+    BatteryReading rv = new BatteryReading(v, a, "");
     logger.debug("got reading: {}", rv);
     return rv;
   }

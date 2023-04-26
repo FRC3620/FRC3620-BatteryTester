@@ -2,13 +2,31 @@
 <Configuration status="WARN" monitorInterval="30">
     <Properties>
         <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1} - %m%n</Property>
+        <Property name="LOG_DIR">./BatteryTesterLogs</Property>
     </Properties>
 
     <Appenders>
-        <Console name="console" target="SYSTEM_OUT" follow="true">
+        <Console name="console" target="SYSTEM_OUT" follow="false">
             <PatternLayout pattern="${LOG_PATTERN}"/>
             <ThresholdFilter level="debug"/>
         </Console>
+        <RollingFile
+                name="rollingFile"
+                fileName="${LOG_DIR}/application.log"
+                filePattern="${LOG_DIR}/$${date:yyyy-MM}/application-%d{yyyy-MM-dd}.log.gz"
+                ignoreExceptions="false">
+            <ThresholdFilter level="debug"/>
+            <PatternLayout>
+                <Pattern>%d{yyyy-MM-dd HH:mm:ss} %-5p %m%n</Pattern>
+            </PatternLayout>
+            <CronTriggeringPolicy schedule="0 0 0 * * ?"/>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${LOG_DIR}" maxDepth="2">
+                    <IfFileName glob="*/application.*.log.gz" />
+                    <IfLastModified age="800d" />
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
@@ -19,6 +37,7 @@
 
         <Root level="info">
             <AppenderRef ref="console"/>
+            <AppenderRef ref="rollingFile"/>
         </Root>
     </Loggers>
 </Configuration>

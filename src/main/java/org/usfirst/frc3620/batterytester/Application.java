@@ -30,7 +30,7 @@ public class Application {
 
     public static void main(final String[] args) {
         Application application = new Application();
-        application.buildAndStartServer(8080, "localhost");
+        application.buildAndStartServer(8080, "0.0.0.0");
     }
 
     public void buildAndStartServer(int port, String host) {
@@ -69,7 +69,7 @@ public class Application {
         batteryTester = new BatteryTester(battery);
         Thread batteryThread = new Thread(batteryTester);
         batteryThread.start();
-        batteryTester.startTest(200.0);
+        batteryTester.setLoadAmperage(200.0);
 
         while (true) {
             try {

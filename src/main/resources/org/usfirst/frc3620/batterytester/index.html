@@ -131,7 +131,7 @@ const chartConfig = {
 };
 const voltageChart = new Chart(document.getElementById('voltagechart'), chartConfig);
 
-var ws = new ReconnectingWebSocket("ws://127.0.0.1:8080/battery");
+var ws = new ReconnectingWebSocket("ws://" + location.host + "/battery");
 ws.debug = false;
 ws.onmessage = function (event) {
   var data = JSON.parse(event.data);
