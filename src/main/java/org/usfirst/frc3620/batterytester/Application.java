@@ -3,7 +3,6 @@ package org.usfirst.frc3620.batterytester;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
@@ -61,7 +60,6 @@ public class Application {
         IBattery battery;
         if (isRaspbian()) {
             battery = new RealBattery();
-            new SN3218(1);
         } else {
             BatteryInfo bi = new BatteryInfo();
             bi.nominalCapacity = 18.2;
@@ -125,23 +123,6 @@ public class Application {
                     throw new RuntimeException(e);
                 }
             }
-        }
-    }
-
-    public static class WebsocketMessage {
-        String messageType;
-        Object payload;
-        public WebsocketMessage (Object payload) {
-            this.messageType = payload.getClass().getSimpleName();
-            this.payload = payload;
-        }
-
-        public String getMessageType() {
-            return messageType;
-        }
-
-        public Object getPayload() {
-            return payload;
         }
     }
 

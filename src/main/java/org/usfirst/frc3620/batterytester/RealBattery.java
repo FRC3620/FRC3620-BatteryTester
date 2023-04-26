@@ -9,12 +9,14 @@ import java.util.Collection;
 public class RealBattery implements IBattery {
   Logger logger = LoggerFactory.getLogger(getClass());
 
-  Ads1x15 ads;
+  AutomationHat automationHat;
+
+  double load = 0;
 
   public RealBattery() {
-    ads = new Ads1x15(1, Ads1x15.Address.GND, Ads1x15.PgaConfig._6144MV, Ads1x15.Ads1115DataRate._32HZ);
-    ads.setSingleMode(0);
-    ads.setSingleMode(1);
+    automationHat = new AutomationHat(1, Ads1x15.PgaConfig._6144MV, Ads1x15.Ads1015DataRate._128HZ);
+    automationHat.ads.setSingleMode(0);
+    automationHat.ads.setSingleMode(1);
   }
 
   @Override
@@ -23,20 +25,30 @@ public class RealBattery implements IBattery {
   }
 
   @Override
-  public BatteryReadings getBatteryStatus() {
-    double v = ads.getValue(0);
-    double a = ads.getValue(1);
-    return new BatteryReadings(v, a);
+  public BatteryReading getBatteryReading() {
+    double v = automationHat.getAdsValue(1);
+    double a = automationHat.getAdsValue(2);
+    BatteryReading rv = new BatteryReading(v, a);
+    logger.debug("got reading: {}", rv);
+    return rv;
   }
 
   @Override
   public void setLoad(double amperage) {
-    logger.info ("setting load to {}", amperage);
+    if (load != amperage) {
+      logger.info("setting load to {}", amperage);
+      if (amperage > 0) {
+        automationHat.setRelay(1, true);
+      } else {
+        automationHat.setRelay(1, false);
+      }
+      load = amperage;
+    }
   }
 
   @Override
   public double getLoad() {
-    return 0;
+    return load;
   }
 
   @Override
@@ -46,6 +58,10 @@ public class RealBattery implements IBattery {
 
   @Override
   public void close() {
-    ads.close();
+    try {
+      automationHat.close();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 }

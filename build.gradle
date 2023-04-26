@@ -38,6 +38,7 @@ test {
 jar {
     manifest {
         attributes "Main-Class": "org.usfirst.frc3620.batterytester.Application"
+        // attributes "Main-Class": "org.usfirst.frc3620.batterytester.SN3218"
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
@@ -66,3 +67,8 @@ task deploy {
 }
 
 deploy.dependsOn(build)
+
+configure(deploy) {
+    group = 'build'
+    description = 'Deploy jar to remote system'
+}

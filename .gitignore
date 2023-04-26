@@ -10,3 +10,8 @@
 target
 
 /ssh/
+/build/
+/.gradle/
+/gradle/
+/gradlew
+/gradlew.bat

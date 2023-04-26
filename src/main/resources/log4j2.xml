@@ -15,6 +15,7 @@
         <Logger name="org.usfirst.frc3620.batterytester.Application$BatteryTestStatusWriter" level="info" additivity="true"/>
         <Logger name="org.usfirst.frc3620.batterytester.BatteryTester" level="info" additivity="true"/>
         <Logger name="org.usfirst.frc3620.batterytester.FakeBattery" level="info" additivity="true"/>
+        <Logger name="org.usfirst.frc3620.batterytester.RealBattery" level="debug" additivity="true"/>
 
         <Root level="info">
             <AppenderRef ref="console"/>

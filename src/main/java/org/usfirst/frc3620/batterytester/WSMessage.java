@@ -95,7 +95,7 @@ public class WSMessage {
 
     @Override
     public String toString() {
-      return new StringJoiner(", ", BatteryReadings.class.getSimpleName() + "[", "]")
+      return new StringJoiner(", ", BatteryReading.class.getSimpleName() + "[", "]")
         .add("time=" + getTime())
         .add("voltage=" + getVoltage())
         .add("amperage=" + getAmperage())

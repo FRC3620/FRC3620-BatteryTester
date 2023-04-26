@@ -66,7 +66,7 @@ public class BatteryTester implements Runnable {
                     logger.debug ("reading battery, t = {}", System.currentTimeMillis() - t00);
                 }
 
-                BatteryTestReading batteryTestReading = new BatteryTestReading(tDelta / 1000.0, battery.getBatteryStatus(), 0, 0);
+                BatteryTestReading batteryTestReading = new BatteryTestReading(tDelta / 1000.0, battery.getBatteryReading(), 0, 0);
                 logger.debug("sample {}, t {}, v {}, a {}", testSamples.size(), tDelta, batteryTestReading.getVoltage(), batteryTestReading.getAmperage());
 
 
@@ -96,6 +96,7 @@ public class BatteryTester implements Runnable {
                 }
 
                 if (batteryTestReading.getVoltage() < 10.7) {
+                    logger.info ("hit voltage threshold, shutting down test");
                     internalStatus = InternalStatus.DETERMINING_RINT_2;
                     battery.setLoad(0);
                 }
@@ -226,6 +227,7 @@ public class BatteryTester implements Runnable {
     void loadOff() {
         logger.info ("shutdown hook activated, shutting off load");
         battery.setLoad(0);
+        battery.close();
     }
 
     public static class BatteryTestReading {
@@ -239,7 +241,7 @@ public class BatteryTester implements Runnable {
             this.aH = aH;
         }
 
-        public BatteryTestReading(double t, BatteryReadings batteryStatus, double vaH, double aH) {
+        public BatteryTestReading(double t, BatteryReading batteryStatus, double vaH, double aH) {
             this(t, batteryStatus.getVoltage(), batteryStatus.getAmperage(), vaH, aH);
         }
 
@@ -268,7 +270,7 @@ public class BatteryTester implements Runnable {
 
         @Override
         public String toString() {
-            return new StringJoiner(", ", BatteryReadings.class.getSimpleName() + "[", "]")
+            return new StringJoiner(", ", BatteryReading.class.getSimpleName() + "[", "]")
                     .add("time=" + time)
                     .add("voltage=" + getVoltage())
                     .add("amperage=" + getAmperage())

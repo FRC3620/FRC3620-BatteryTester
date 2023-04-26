@@ -1,4 +1,4 @@
-undertow-websocket
+FRC3620-BatteryTester
 ==================
 
-A simple websocket server implemented with undertow
+An FRC battery tester, based on a Pimoroni AutomationHAT and some cheap battery loads.

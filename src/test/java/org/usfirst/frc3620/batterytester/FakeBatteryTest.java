@@ -13,7 +13,7 @@ public class FakeBatteryTest {
         long t = 0;
         double ampHours = 0;
         while (true) {
-            BatteryReadings batteryStatus = b.getBatteryStatus();
+            BatteryReading batteryStatus = b.getBatteryReading();
             double v = batteryStatus.getVoltage();
             double a = batteryStatus.getAmperage();
             ampHours += a / 3600.0;

@@ -37,12 +37,12 @@ public class FakeBattery implements IBattery {
     }
 
     @Override
-    public BatteryReadings getBatteryStatus() {
+    public BatteryReading getBatteryReading() {
         double v = calculateInternalVoltage();
         double ohms = 12.0 / currentLoad;
         double a = v / (ohms + internalResistance);
         double drop = a * internalResistance;
-        return new BatteryReadings(v - drop, a);
+        return new BatteryReading(v - drop, a);
     }
 
     @Override
