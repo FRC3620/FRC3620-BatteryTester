@@ -18,7 +18,7 @@ public class WSMessage {
    */
   static public void prime() {
     // get classes loaded early
-    WSMessage w = new WSMessage.BatteryTestReading(new BatteryTester.BatteryTestReading(0, 0, 0, 0, 0), true);
+    WSMessage w = new BatteryTestReadingMessage(new BatteryTester.BatteryTestReading(0, 0, 0, 0, 0), true);
     try {
       objectMapper.writeValueAsString(w);
     } catch (JsonProcessingException e) {
@@ -44,16 +44,20 @@ public class WSMessage {
   static class M {
     public final String messageType;
     public final WSMessage payload;
-    M(WSMessage payload) {
-      this.messageType = payload.getClass().getSimpleName();
+    M (WSMessage payload) {
+      String s = payload.getClass().getSimpleName();
+      if (s.endsWith("Message")) {
+        s = s.substring(0, s.length() - 7);
+      }
+      this.messageType = s;
       this.payload = payload;
     }
   }
 
-  static public class BatteryTestStatus extends WSMessage {
+  static public class BatteryTestStatusMessage extends WSMessage {
     private final BatteryTester.Status status;
 
-    public BatteryTestStatus(BatteryTester.Status status) {
+    public BatteryTestStatusMessage(BatteryTester.Status status) {
       this.status = status;
     }
 
@@ -65,11 +69,11 @@ public class WSMessage {
     }
   }
 
-  public static class BatteryTestReading extends WSMessage {
+  public static class BatteryTestReadingMessage extends WSMessage {
     private final BatteryTester.BatteryTestReading reading;
     private final boolean update;
 
-    public BatteryTestReading(BatteryTester.BatteryTestReading reading, boolean update) {
+    public BatteryTestReadingMessage(BatteryTester.BatteryTestReading reading, boolean update) {
       this.reading = reading;
       this.update = update;
     }
@@ -102,17 +106,39 @@ public class WSMessage {
         .add("catchup=" + getUpdate())
         .toString();
     }
-
   }
 
-  public static WSMessage START_BATTERY_TEST = new StartBatteryTest();
-  private static class StartBatteryTest extends WSMessage {
-    public StartBatteryTest() { }
+  public static class BatteryReadingMessage extends WSMessage {
+    private final BatteryReading reading;
+    public BatteryReadingMessage(BatteryReading reading) {
+      this.reading = reading;
+    }
+
+    public double getAmperage() {
+      return reading.getAmperage();
+    }
+
+    public double getVoltage() {
+      return reading.getVoltage();
+    }
+
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", getClass().getSimpleName() + "[", "]")
+              .add("voltage=" + getVoltage())
+              .add("amperage=" + getAmperage())
+              .toString();
+    }
   }
 
-  public static class TickTock extends WSMessage {
+  public static WSMessage START_BATTERY_TEST = new StartBatteryTestMessage();
+  private static class StartBatteryTestMessage extends WSMessage {
+    public StartBatteryTestMessage() { }
+  }
+
+  public static class TickTockMessage extends WSMessage {
     private Date now = new Date();
-    public TickTock() { }
+    public TickTockMessage() { }
 
     public Date getNow() {
       return now;

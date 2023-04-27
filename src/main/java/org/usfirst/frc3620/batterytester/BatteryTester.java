@@ -50,11 +50,13 @@ public class BatteryTester implements Runnable {
     @Override
     public void run() {
         logger.info("starting the collection thread");
-        int loop_timer_counter = 0; // set to none-zero to get some benchmarking along the way
+        int loop_timer_counter = 0; // set to non-zero to get some benchmarking along the way
         while (true) {
             long now = System.currentTimeMillis();
             long t00 = now;
             if (fakeBattery != null) fakeBattery.update();
+
+            BatteryReading batteryReading = battery.getBatteryReading();
 
             if (status == Status.RUNNING || status == Status.PAUSED) {
                 long tDelta = now;
@@ -66,7 +68,7 @@ public class BatteryTester implements Runnable {
                     logger.debug ("reading battery, t = {}", System.currentTimeMillis() - t00);
                 }
 
-                BatteryTestReading batteryTestReading = new BatteryTestReading(tDelta / 1000.0, battery.getBatteryReading(), 0, 0);
+                BatteryTestReading batteryTestReading = new BatteryTestReading(tDelta / 1000.0, batteryReading, 0, 0);
                 logger.debug("sample {}, t {}, v {}, a {}", testSamples.size(), tDelta, batteryTestReading.getVoltage(), batteryTestReading.getAmperage());
 
 
@@ -80,7 +82,7 @@ public class BatteryTester implements Runnable {
                 if (loop_timer_counter > 0) {
                     logger.debug ("sending samples, t = {}", System.currentTimeMillis() - t00);
                 }
-                sendToAll(new WSMessage.BatteryTestReading(batteryTestReading, true));
+                sendToAll(new WSMessage.BatteryTestReadingMessage(batteryTestReading, true));
                 if (loop_timer_counter > 0) {
                     logger.debug ("samples sent, t = {}", System.currentTimeMillis() - t00);
                 }
@@ -101,9 +103,11 @@ public class BatteryTester implements Runnable {
                     battery.setLoad(0);
                 }
 
+            } else {
+                sendToAll(new WSMessage.BatteryReadingMessage(batteryReading));
             }
 
-            sendToAll(new WSMessage.TickTock()); // help determine dropped connections
+            sendToAll(new WSMessage.TickTockMessage()); // help determine dropped connections
 
             if (loop_timer_counter > 0) loop_timer_counter--;
 
@@ -122,7 +126,7 @@ public class BatteryTester implements Runnable {
     }
 
     void sendStatus() {
-        sendToAll(new WSMessage.BatteryTestStatus(status));
+        sendToAll(new WSMessage.BatteryTestStatusMessage(status));
     }
 
     void sendToAll (WSMessage w) {
@@ -199,7 +203,7 @@ public class BatteryTester implements Runnable {
         synchronized (statusQueues) {
             if (catchup) {
                 try {
-                    q.put(new WSMessage.BatteryTestStatus(status));
+                    q.put(new WSMessage.BatteryTestStatusMessage(status));
                     q.put(WSMessage.START_BATTERY_TEST);
 
                     synchronized (testSamples) {
@@ -207,7 +211,7 @@ public class BatteryTester implements Runnable {
                         while (i.hasNext()) {
                             BatteryTestReading r = i.next();
                             boolean shouldUpdate = ! i.hasNext(); // don't update if more coming
-                            WSMessage catchupMessage = new WSMessage.BatteryTestReading(r, shouldUpdate);
+                            WSMessage catchupMessage = new WSMessage.BatteryTestReadingMessage(r, shouldUpdate);
                             q.put(catchupMessage);
                         }
                     }
