@@ -87,7 +87,7 @@ public class Application {
 
         @Override
         public void onConnect(WebSocketHttpExchange exchange, WebSocketChannel channel) {
-            logger.info("Got connection {}", channel);
+            logger.info("Got connection {}", channel.getSourceAddress());
             new BatteryTestStatusWriter(channel);
         }
     }
@@ -107,7 +107,7 @@ public class Application {
         }
 
         void thread() {
-            logger.info ("Starting a writer for {}", channel);
+            logger.info ("Starting a writer for {}", channel.getSourceAddress());
             while (true) {
                 try {
                     WSMessage m = q.take();
@@ -116,7 +116,7 @@ public class Application {
                         logger.debug("Writing to {}: {}", channel, s);
                         WebSockets.sendText(s, channel, null);
                     } else {
-                        logger.info("Dropping connection {}", channel);
+                        logger.info("Dropping connection {}", channel.getSourceAddress());
                         batteryTester.removeStatusConsumer(q);
                     }
                 } catch (InterruptedException e) {

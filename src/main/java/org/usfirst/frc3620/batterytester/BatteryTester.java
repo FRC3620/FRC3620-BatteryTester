@@ -13,14 +13,14 @@ public class BatteryTester implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     enum Status {
-        OFF, RUNNING, PAUSED
+        STOPPED, RUNNING, PAUSED
     }
 
     enum InternalStatus {
         DETERMINING_RINT_1, LOADED, DETERMINING_RINT_2
     }
 
-    Status status = Status.OFF;
+    Status status = Status.STOPPED;
 
     InternalStatus internalStatus = InternalStatus.DETERMINING_RINT_1;
 
@@ -93,7 +93,7 @@ public class BatteryTester implements Runnable {
                 } else if (internalStatus == InternalStatus.LOADED) {
                     if (status != Status.PAUSED) battery.setLoad(loadAmperage);
                 } else if (internalStatus == InternalStatus.DETERMINING_RINT_2) {
-                    status = Status.OFF;
+                    status = Status.STOPPED;
                     sendStatus();
                 }
 
@@ -148,7 +148,8 @@ public class BatteryTester implements Runnable {
             logger.info ("tried to start test, but already running");
             return false;
         }
-        if (status == Status.OFF) {
+        if (status == Status.STOPPED) {
+            if (fakeBattery != null) fakeBattery.reset();
             logger.info ("starting test, load = {}", loadAmperage);
             t0 = System.currentTimeMillis();
             testSamples.clear();
@@ -183,7 +184,7 @@ public class BatteryTester implements Runnable {
     }
 
     public boolean stopTest () {
-        if (status == Status.OFF) {
+        if (status == Status.STOPPED) {
             return false;
         }
         internalStatus = InternalStatus.DETERMINING_RINT_2;

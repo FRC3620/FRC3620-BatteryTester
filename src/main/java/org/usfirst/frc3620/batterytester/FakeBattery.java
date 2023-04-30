@@ -31,6 +31,10 @@ public class FakeBattery implements IBattery {
         currentLoad = 0;
     }
 
+    public void reset() {
+        currentCapacity = batteryInfo.getNominalCapacity();
+    }
+
     @Override
     public BatteryInfo getBatteryInfo() {
         return batteryInfo;

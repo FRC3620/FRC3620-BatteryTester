@@ -27,6 +27,8 @@ body { padding-top: 40px; }
    <div class="container-fluid">
     <div class="d-flex">Server connection:&nbsp;<div id="connection-state">Disconnected.</div></div>
     <div class="d-flex">
+      Battery:&nbsp;<select id="battery"></select>
+      &nbsp;&nbsp;&nbsp;&nbsp;
       Status:&nbsp;<div id="test-status"></div>
       &nbsp;&nbsp;&nbsp;&nbsp;
       V:&nbsp;<div id="test-voltage"></div>
@@ -41,14 +43,44 @@ body { padding-top: 40px; }
   <div class="h-100 container-fluid d-flex flex-column">
    <div class="row flex-grow-1 border">
     <div class="col-lg-1">
-     <div class="z-disable-if-disconnected">
-      <button class="btn btn-success" id="start">Start</button>
-      <button class="btn" id="pause">Pause</button>
-      <button class="btn btn-danger" id="stop">Stop</button>
-     </div>
+     <button class="btn btn-success" id="start">Start</button>
+     <button class="btn btn-warning" id="pause">Pause</button>
+     <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#stopModal">Stop</button>
     </div>
     <div class="col-lg-10"><canvas id="voltagechart"></canvas></div>
     <div class="col-lg-1"></div>
+   </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="stopModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+   <div class="modal-dialog" role="document">
+    <div class="modal-content">
+     <div class="modal-header">
+      <h5 class="modal-title" id="exampleModalLabel">Stop Test?</h5>
+      <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+       <span aria-hidden="true">&times;</span>
+      </button>
+     </div>
+     <div class="modal-body">
+      Are you sure you want to stop this test?
+     </div>
+     <div class="modal-footer">
+      <button type="button" id="stop" class="btn btn-danger" data-bs-dismiss="modal">Stop</button>
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Cancel</button>
+     </div>
+    </div>
+   </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="disconnectedModal" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+   <div class="modal-dialog" role="document">
+    <div class="modal-content">
+     <div class="modal-body">
+      Waiting for server connection...
+     </div>
+    </div>
    </div>
   </div>
 
@@ -137,62 +169,14 @@ const chartConfig = {
 };
 const voltageChart = new Chart(document.getElementById('voltagechart'), chartConfig);
 
-var ws = new ReconnectingWebSocket("ws://" + location.host + "/battery");
-ws.debug = false;
-ws.onmessage = function (event) {
-  var data = JSON.parse(event.data);
-  // console.log(event.data);
-  $('#' + data.messageType).text(event.data);
-  switch (data.messageType) {
-    case "BatteryReading":
-      $('#test-voltage').text(data.payload.voltage.toFixed(2));
-      $('#test-amperage').text(data.payload.amperage.toFixed(2));
-      break;
-    case "BatteryTestReading":
-      labels.push(data.payload.time);
-      voltages.push(data.payload.voltage);
-      amperages.push(data.payload.amperage);
-      if (data.payload.update) {
-        voltageChart.update();
-      }
-      $('#test-voltage').text(data.payload.voltage.toFixed(2));
-      $('#test-amperage').text(data.payload.amperage.toFixed(2));
-      break;
-    case "StartBatteryTest":
-      labels.length = 0;
-      voltages.length = 0;
-      amperages.length = 0;
-      voltageChart.update();
-      break;
-    case "TickTock":
-      $('#time-human').text(data.payload.human);
-      break;
-    case "BatteryTestStatus":
-      $('#test-status').text(data.payload.status);
-      break;
-    default:
-      break; // should probably log something here
-  }
-}
-
-ws.onopen = function (event) {
- showConnect();
-}
-
-ws.onclose = function (event) {
- showDisconnect();
-}
-
 // these need work; they will get squirrelly if we disable button based on tests start and stop
 function showConnect() {
- $(".z-disable-if-disconnected :input").attr("disabled", false);
  $('#connection-state').text("Connected.")
  $('#connection-state').removeClass("text-danger");
  $('#connection-state').addClass("text-success");
 }
 
 function showDisconnect() {
- $(".z-disable-if-disconnected :input").attr("disabled", true);
  $('#connection-state').text("Disconnected.");
  $('#connection-state').removeClass("text-success");
  $('#connection-state').addClass("text-danger");
@@ -213,8 +197,60 @@ $("#start").click(function() { ajaxButton("/test/start"); });
 $("#stop").click(function() { ajaxButton("/test/stop"); });
 $("#pause").click(function() { ajaxButton("/test/pause"); });
 
+$( document ).ready(function() {
+ console.log( "ready!" );
+ showDisconnect();
+ // $('#disconnectedModal').modal('show');
 
-showDisconnect();
+ var ws = new ReconnectingWebSocket("ws://" + location.host + "/battery");
+ ws.debug = true;
+ ws.onmessage = function (event) {
+   var data = JSON.parse(event.data);
+   // console.log(event.data);
+   $('#' + data.messageType).text(event.data);
+   switch (data.messageType) {
+     case "BatteryReading":
+       $('#test-voltage').text(data.payload.voltage.toFixed(2));
+       $('#test-amperage').text(data.payload.amperage.toFixed(2));
+       break;
+     case "BatteryTestReading":
+       labels.push(data.payload.time);
+       voltages.push(data.payload.voltage);
+       amperages.push(data.payload.amperage);
+       if (data.payload.update) {
+         voltageChart.update();
+       }
+       $('#test-voltage').text(data.payload.voltage.toFixed(2));
+       $('#test-amperage').text(data.payload.amperage.toFixed(2));
+       break;
+     case "StartBatteryTest":
+       labels.length = 0;
+       voltages.length = 0;
+       amperages.length = 0;
+       voltageChart.update();
+       break;
+     case "TickTock":
+       $('#time-human').text(data.payload.human);
+       break;
+     case "BatteryTestStatus":
+       $('#test-status').text(data.payload.status);
+       break;
+     default:
+       break; // should probably log something here
+   }
+ }
+
+ ws.onopen = function (event) {
+  showConnect();
+  $('#disconnectedModal').modal('hide');
+ }
+
+ ws.onclose = function (event) {
+  showDisconnect();
+  $('#disconnectedModal').modal('show');
+ }
+
+});
 
   </script>
  </body>
