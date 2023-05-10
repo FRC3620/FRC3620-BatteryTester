@@ -1,5 +1,7 @@
 package org.usfirst.frc3620.batterytester;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,6 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class BatteryTester implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -34,7 +38,7 @@ public class BatteryTester implements Runnable {
 
     double loadAmperage = 0;
 
-    final Object collectionThreadWaitLock = new Object();
+    final Semaphore collectionThreadSemaphore = new Semaphore(0);
 
     final List<BlockingQueue<WSMessage>> statusQueues = new ArrayList<>();
 
@@ -53,6 +57,9 @@ public class BatteryTester implements Runnable {
     public void run() {
         logger.info("starting the collection thread");
         int loop_timer_counter = 0; // set to non-zero to get some benchmarking along the way
+        if (loop_timer_counter > 0) {
+            Configurator.setLevel(getClass().getName(), Level.DEBUG);
+        }
         while (true) {
             Timer loop_t0 = new Timer();
             if (fakeBattery != null) fakeBattery.update();
@@ -112,24 +119,26 @@ public class BatteryTester implements Runnable {
                     internalStatus = InternalStatus.DETERMINING_RINT_2_1;
                 }
 
+                if (loop_timer_counter > 0) loop_timer_counter--;
+
             } else {
                 sendToAll(new WSMessage.BatteryReadingMessage(batteryReading));
             }
 
             sendToAll(new WSMessage.TickTockMessage()); // help determine dropped connections
 
-            if (loop_timer_counter > 0) loop_timer_counter--;
-
-            synchronized (collectionThreadWaitLock) {
-                double delay = 1.0;
-                if (internalStatus == InternalStatus.DETERMINING_RINT_1_2 || internalStatus == InternalStatus.DETERMINING_RINT_2_2) {
-                    delay = 0.1;
-                }
-                try {
-                    collectionThreadWaitLock.wait((int) (delay * 1000));
-                } catch (InterruptedException ignored) {
-
-                }
+            double delay = 1.0;
+            if (internalStatus == InternalStatus.DETERMINING_RINT_1_2 || internalStatus == InternalStatus.DETERMINING_RINT_2_2) {
+                delay = 0.1;
+            }
+            boolean wasBumped = false;
+            try {
+                wasBumped = collectionThreadSemaphore.tryAcquire((int) (delay * 1000), TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            if (wasBumped) {
+                logger.info ("collection thread was bumped");
             }
         }
     }
@@ -174,7 +183,6 @@ public class BatteryTester implements Runnable {
         internalStatus = InternalStatus.DETERMINING_RINT_1_1;
         status = Status.RUNNING;
         sendStatus();
-        logger.info("bumping the collection thread");
         bumpCollectionThread();
         return true;
     }
@@ -205,9 +213,8 @@ public class BatteryTester implements Runnable {
     }
 
     void bumpCollectionThread() {
-        synchronized (collectionThreadWaitLock) {
-            collectionThreadWaitLock.notify();
-        }
+        logger.info("bumping the collection thread");
+        collectionThreadSemaphore.release();
     }
 
     public void addStatusConsumer (BlockingQueue<WSMessage> q, boolean catchup) {

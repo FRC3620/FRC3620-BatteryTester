@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN" monitorInterval="30">
     <Properties>
-        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1} - %m%n</Property>
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS ZZZZ} %-5p %c{1} - %m%n</Property>
         <Property name="LOG_DIR">./BatteryTesterLogs</Property>
     </Properties>
 
@@ -16,9 +16,7 @@
                 filePattern="${LOG_DIR}/$${date:yyyy-MM}/application-%d{yyyy-MM-dd}.log.gz"
                 ignoreExceptions="false">
             <ThresholdFilter level="debug"/>
-            <PatternLayout>
-                <Pattern>%d{yyyy-MM-dd HH:mm:ss} %-5p %m%n</Pattern>
-            </PatternLayout>
+            <PatternLayout pattern="${LOG_PATTERN}"/>
             <CronTriggeringPolicy schedule="0 0 0 * * ?"/>
             <DefaultRolloverStrategy>
                 <Delete basePath="${LOG_DIR}" maxDepth="2">
@@ -31,7 +29,7 @@
 
     <Loggers>
         <Logger name="org.usfirst.frc3620.batterytester.Application$BatteryTestStatusWriter" level="info" additivity="true"/>
-        <Logger name="org.usfirst.frc3620.batterytester.BatteryTester" level="debug" additivity="true"/>
+        <Logger name="org.usfirst.frc3620.batterytester.BatteryTester" level="info" additivity="true"/>
         <Logger name="org.usfirst.frc3620.batterytester.FakeBattery" level="info" additivity="true"/>
         <Logger name="org.usfirst.frc3620.batterytester.RealBattery" level="debug" additivity="true"/>
 
