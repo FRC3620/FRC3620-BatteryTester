@@ -5,6 +5,14 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -44,6 +52,10 @@ public class BatteryTester implements Runnable {
 
     final List<BatteryTestReading> testSamples = new ArrayList<>();
 
+    BufferedWriter outputWriter = null;
+    String outputFilename = "";
+    final DateTimeFormatter output_dtf = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneId.systemDefault());
+
     public BatteryTester (IBattery battery)  {
         this.battery = battery;
         if (battery instanceof FakeBattery) {
@@ -60,6 +72,9 @@ public class BatteryTester implements Runnable {
         if (loop_timer_counter > 0) {
             Configurator.setLevel(getClass().getName(), Level.DEBUG);
         }
+
+        DecimalFormat f3 = (DecimalFormat) DecimalFormat.getInstance();
+        f3.setMaximumFractionDigits(3);
         while (true) {
             Timer loop_t0 = new Timer();
             if (fakeBattery != null) fakeBattery.update();
@@ -78,6 +93,25 @@ public class BatteryTester implements Runnable {
 
                 BatteryTestReading batteryTestReading = new BatteryTestReading(tDelta, batteryReading, 0, 0);
                 logger.debug("sample {}, t {}, v {}, a {}, is {}", testSamples.size(), tDelta, batteryTestReading.getVoltage(), batteryTestReading.getAmperage(), internalStatus);
+
+                if (outputWriter != null) {
+                    try {
+                        outputWriter.write(output_dtf.format(Instant.now()));
+                        outputWriter.write(",");
+                        outputWriter.write(f3.format(tDelta));
+                        outputWriter.write(",");
+                        outputWriter.write(f3.format(batteryTestReading.getVoltage()));
+                        outputWriter.write(",");
+                        outputWriter.write(f3.format(batteryTestReading.getAmperage()));
+                        outputWriter.write(",");
+                        outputWriter.write(Double.toString(batteryTestReading.getVaH()));
+                        outputWriter.write(",");
+                        outputWriter.write(Double.toString(batteryTestReading.getAH()));
+                        outputWriter.newLine();
+                    } catch (IOException e) {
+
+                    }
+                }
 
 
                 if (loop_timer_counter > 0) {
@@ -110,6 +144,14 @@ public class BatteryTester implements Runnable {
                     battery.setLoad(0);
                     internalStatus = InternalStatus.DETERMINING_RINT_2_2;
                 } else if (internalStatus == InternalStatus.DETERMINING_RINT_2_2) {
+                    if (outputWriter != null) {
+                        try {
+                            outputWriter.close();
+                        } catch (IOException e) {
+                            logger.warn("trouble closing {}: {}", outputFilename, e);
+                        }
+                    }
+                    outputWriter = null;
                     status = Status.STOPPED;
                     sendStatus();
                 }
@@ -163,6 +205,21 @@ public class BatteryTester implements Runnable {
         }
     }
 
+    final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneOffset.UTC);
+
+    void makeOutputWriter() {
+        String s = dtf.format(Instant.now());
+        outputFilename = s + ".csv";
+        try {
+            outputWriter = new BufferedWriter(new FileWriter(outputFilename));
+
+            outputWriter.write("datetime,t,v,a,vaH,aH");
+            outputWriter.newLine();
+        } catch (IOException e) {
+            logger.error ("Unable to open output file {}: {}", outputFilename, e);
+        }
+    }
+
     public boolean startTest () {
         if (status == Status.RUNNING) {
             logger.info ("tried to start test, but already running");
@@ -170,6 +227,7 @@ public class BatteryTester implements Runnable {
         }
         if (status == Status.STOPPED) {
             if (fakeBattery != null) fakeBattery.reset();
+            makeOutputWriter();
             logger.info ("starting test, load = {}", loadAmperage);
             test_t0 = new Timer();
             testSamples.clear();
