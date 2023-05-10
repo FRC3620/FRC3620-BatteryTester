@@ -1,5 +1,9 @@
 package org.usfirst.frc3620.batterytester;
 
+import com.github.sarxos.webcam.Webcam;
+import com.google.zxing.*;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -16,6 +20,10 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -27,6 +35,8 @@ public class Application {
     private Undertow server;
 
     private BatteryTester batteryTester;
+
+    private Webcam webcam = null;
 
     public static void main(final String[] args) {
         Application application = new Application();
@@ -70,6 +80,9 @@ public class Application {
         Thread batteryThread = new Thread(batteryTester);
         batteryThread.start();
         batteryTester.setLoadAmperage(200.0);
+
+        webcam = Webcam.getWebcams().get(0);
+        webcam.open();
 
         while (true) {
             try {
@@ -146,6 +159,9 @@ public class Application {
             rv = batteryTester.pauseTest();
         } else if (verb.equalsIgnoreCase("stop")) {
             rv = batteryTester.stopTest();
+        } else if (verb.equalsIgnoreCase("id")) {
+            readCameraCode();
+            rv = true;
         } else {
             httpServerExchange.setStatusCode(StatusCodes.NOT_FOUND);
             httpServerExchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
@@ -161,6 +177,37 @@ public class Application {
             httpServerExchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
             httpServerExchange.getResponseSender().send("cannot " + verb + ", current state is " + batteryTester.getStatus().toString());
             return;
+        }
+    }
+
+    public void readCameraCode() {
+        BufferedImage image;
+
+        if (true) {
+            image = webcam.getImage();
+            try {
+                ImageIO.write(image, "PNG", new File("hello-world.png"));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            try {
+                image = ImageIO.read(new File("frame.png"));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        BinaryBitmap binaryBitmap
+                = new BinaryBitmap(new HybridBinarizer(
+                        new BufferedImageLuminanceSource(image)));
+
+        try {
+            Result result
+                    = new MultiFormatReader().decode(binaryBitmap);
+            logger.info("result: {}", result);
+        } catch (NotFoundException e) {
+            logger.warn("unable to decode", e);
+            // throw new RuntimeException(e);
         }
     }
 
