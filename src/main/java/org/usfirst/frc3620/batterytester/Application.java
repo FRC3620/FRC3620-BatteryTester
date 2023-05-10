@@ -19,6 +19,7 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -26,11 +27,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static io.undertow.Handlers.*;
 
-public class Application {
+@CommandLine.Command(name = "Application")
+public class Application implements Callable<Integer> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private Undertow server;
 
@@ -38,9 +41,14 @@ public class Application {
 
     private Webcam webcam = null;
 
-    public static void main(final String[] args) {
-        Application application = new Application();
-        application.buildAndStartServer(8080, "0.0.0.0");
+    public static void main(String... args) {
+        int exitCode = new CommandLine(new Application()).execute(args);
+        System.exit(exitCode);
+    }
+
+    public Integer call() {
+        buildAndStartServer(8080, "0.0.0.0");
+        return 0;
     }
 
     public void buildAndStartServer(int port, String host) {

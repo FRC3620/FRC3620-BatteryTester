@@ -34,6 +34,14 @@ dependencies {
 
     implementation 'com.github.sarxos:webcam-capture:0.3.12'
 
+    implementation 'info.picocli:picocli:4.7.3'
+    annotationProcessor 'info.picocli:picocli-codegen:4.7.3'
+
+}
+
+// needed for picocli annotation processing
+compileJava {
+    options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 }
 
 test {
