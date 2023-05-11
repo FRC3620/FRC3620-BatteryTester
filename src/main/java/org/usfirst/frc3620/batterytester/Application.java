@@ -19,21 +19,26 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import picocli.CommandLine;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Paths;
+import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static io.undertow.Handlers.*;
 
-@CommandLine.Command(name = "Application")
-public class Application implements Callable<Integer> {
+@CommandLine.Command(name = "FRC3620-BatteryTester", versionProvider = Application.PropertiesVersionProvider.class, mixinStandardHelpOptions = true)
+public class Application implements Runnable {
+    @CommandLine.Option(names = {"-V", "--version"}, versionHelp = true, description = "Print version info from examples.jar/version.txt and exit")
+    boolean versionRequested;
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private Undertow server;
 
@@ -46,9 +51,8 @@ public class Application implements Callable<Integer> {
         System.exit(exitCode);
     }
 
-    public Integer call() {
+    public void run() {
         buildAndStartServer(8080, "0.0.0.0");
-        return 0;
     }
 
     public void buildAndStartServer(int port, String host) {
@@ -223,4 +227,24 @@ public class Application implements Callable<Integer> {
         String OS = System.getProperty("os.name").toLowerCase();
         return OS.contains("nux"); // really bad hack
     }
+
+  /**
+   * {@link IVersionProvider} implementation that returns version information from a {@code /version.txt} file in the classpath.
+   */
+  static class PropertiesVersionProvider implements CommandLine.IVersionProvider {
+    public String[] getVersion() throws Exception {
+      URL url = getClass().getResource("/git.properties");
+      if (url == null) {
+        return new String[] {"No git.properties file found in the classpath. Is examples.jar in the classpath?"};
+      }
+      Properties properties = new Properties();
+      properties.load(url.openStream());
+      properties.list(System.out);
+      return new String[] {
+        properties.getProperty("Application-name") + " version \"" + properties.getProperty("Version") + "\"",
+        "Built: " + properties.getProperty("Buildtime"),
+      };
+    }
+  }
+
 }

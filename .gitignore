@@ -16,3 +16,6 @@ target
 /gradlew
 /gradlew.bat
 /BatteryTesterLogs/
+
+*.csv
+*.png
