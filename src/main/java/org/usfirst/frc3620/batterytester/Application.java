@@ -52,6 +52,7 @@ public class Application implements Runnable {
     }
 
     public void run() {
+        org.tinylog.Logger.info("Greetings from tinylog!");
         buildAndStartServer(8080, "0.0.0.0");
     }
 
