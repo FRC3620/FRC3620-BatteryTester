@@ -53,6 +53,8 @@ public class Application implements Runnable {
 
     public void run() {
         org.tinylog.Logger.info("Greetings from tinylog!");
+        org.tinylog.Logger.debug("Greetings from tinylog!");
+        org.tinylog.Logger.trace("Greetings from tinylog!");
         buildAndStartServer(8080, "0.0.0.0");
     }
 
@@ -94,8 +96,8 @@ public class Application implements Runnable {
         batteryThread.start();
         batteryTester.setLoadAmperage(200.0);
 
-        webcam = Webcam.getWebcams().get(0);
-        webcam.open();
+        //webcam = Webcam.getWebcams().get(0);
+        //webcam.open();
 
         while (true) {
             try {
@@ -196,7 +198,7 @@ public class Application implements Runnable {
     public void readCameraCode() {
         BufferedImage image;
 
-        if (true) {
+        if (webcam != null) {
             image = webcam.getImage();
             try {
                 ImageIO.write(image, "PNG", new File("hello-world.png"));

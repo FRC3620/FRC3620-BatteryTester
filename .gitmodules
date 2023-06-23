@@ -1,0 +1,3 @@
+[submodule "diozero"]
+	path = diozero
+	url = https://github.com/fovea1959/diozero.git

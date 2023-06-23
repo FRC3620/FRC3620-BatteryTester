@@ -14,9 +14,8 @@ public class RealBattery implements IBattery {
   double load = 0;
 
   public RealBattery() {
-    automationHat = new AutomationHat(1, Ads1x15.PgaConfig._6144MV, Ads1x15.Ads1015DataRate._128HZ);
-    automationHat.ads.setSingleMode(0);
-    automationHat.ads.setSingleMode(1);
+    automationHat = new AutomationHat(1, Ads1x15.PgaConfig._4096MV, Ads1x15.Ads1115DataRate._32HZ);
+    logger.info ("ads set: {}", automationHat.ads.getName());
   }
 
   @Override
@@ -26,8 +25,8 @@ public class RealBattery implements IBattery {
 
   @Override
   public BatteryReading getBatteryReading() {
-    double v = automationHat.getAdsValue(1);
-    double a = automationHat.getAdsValue(2);
+    double v = automationHat.readAnalogInputVoltage(3); // TODO change back to 1
+    double a = automationHat.readAnalogInputVoltage(2);
     BatteryReading rv = new BatteryReading(v, a, "");
     logger.debug("got reading: {}", rv);
     return rv;

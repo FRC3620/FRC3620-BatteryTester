@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN" monitorInterval="30">
     <Properties>
-        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS ZZZZ} %-5p %c{1} - %m%n</Property>
+        <!-- following pattern was %c{1} -->
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS ZZZZ} %-5p %c - %m%n</Property>
         <Property name="LOG_DIR">./BatteryTesterLogs</Property>
     </Properties>
 
     <Appenders>
         <Console name="console" target="SYSTEM_OUT" follow="false">
+            <ThresholdFilter level="trace"/>
             <PatternLayout pattern="${LOG_PATTERN}"/>
-            <ThresholdFilter level="debug"/>
         </Console>
         <RollingFile
                 name="rollingFile"
                 fileName="${LOG_DIR}/application.log"
                 filePattern="${LOG_DIR}/$${date:yyyy-MM}/application-%d{yyyy-MM-dd}.log.gz"
                 ignoreExceptions="false">
-            <ThresholdFilter level="debug"/>
+            <ThresholdFilter level="trace"/>
             <PatternLayout pattern="${LOG_PATTERN}"/>
             <CronTriggeringPolicy schedule="0 0 0 * * ?"/>
             <DefaultRolloverStrategy>
@@ -28,9 +29,14 @@
     </Appenders>
 
     <Loggers>
+        <Logger name="com.diozero.devices.Ads1x15" level="trace" additivity="true"/>
+
+        <Logger name="org.usfirst.frc3620.batterytester.Application" level="trace" additivity="true"/>
         <Logger name="org.usfirst.frc3620.batterytester.Application$BatteryTestStatusWriter" level="info" additivity="true"/>
+        <Logger name="org.usfirst.frc3620.batterytester.AutomationHat" level="trace" additivity="true"/>
         <Logger name="org.usfirst.frc3620.batterytester.BatteryTester" level="info" additivity="true"/>
         <Logger name="org.usfirst.frc3620.batterytester.FakeBattery" level="info" additivity="true"/>
+        <Logger name="org.usfirst.frc3620.batterytester.FixedAds1x15" level="trace" additivity="true"/>
         <Logger name="org.usfirst.frc3620.batterytester.RealBattery" level="debug" additivity="true"/>
 
         <Root level="info">

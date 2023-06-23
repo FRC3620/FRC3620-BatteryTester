@@ -1,5 +1,6 @@
 package org.usfirst.frc3620.batterytester;
 
+import com.diozero.api.AnalogInputDevice;
 import com.diozero.api.DigitalOutputDevice;
 import com.diozero.devices.Ads1x15;
 import org.slf4j.Logger;
@@ -10,6 +11,8 @@ public class AutomationHat implements AutoCloseable {
 
     SN3218 sn3218;
     Ads1x15 ads;
+
+    AnalogInputDevice[] analogInputDevices;
     DigitalOutputDevice[] relays = new DigitalOutputDevice[3];
     public final byte[] LED_RELAYS_NC = { 6, 8, 10 };
     public final byte[] LED_RELAYS_NO = { 7, 9, 11 };
@@ -25,6 +28,22 @@ public class AutomationHat implements AutoCloseable {
 
     public AutomationHat (int controller, Ads1x15.PgaConfig pgaConfig, Ads1x15.Ads1015DataRate dataRate) {
         ads = new Ads1x15(controller, Ads1x15.Address.GND, pgaConfig, dataRate);
+        finishSetup(controller);
+    }
+
+    public AutomationHat (int controller, Ads1x15.PgaConfig pgaConfig, Ads1x15.Ads1115DataRate dataRate) {
+        ads = new Ads1x15(controller, Ads1x15.Address.GND, pgaConfig, dataRate);
+        finishSetup(controller);
+    }
+
+    void finishSetup(int controller) {
+        ads.setSingleMode(1);
+
+        int numChannels = ads.getModel().getNumChannels();
+        analogInputDevices = new AnalogInputDevice[numChannels];
+        for (int channel = 0; channel < numChannels; channel++) {
+            analogInputDevices[channel] = new AnalogInputDevice(ads, channel);
+        }
         sn3218 = new SN3218(controller);
 
         sn3218.output_raw(LED_POWER, LED_RAW_POWER_ON);
@@ -59,18 +78,25 @@ public class AutomationHat implements AutoCloseable {
 
     /**
      * read an AD
-     * @param i index of the AD. This is the number on the board (1..4), not
+     * @param channel index of the AD. This is the number on the board (1..4), not
      *          the internal ADS1x15 ADC number.
-     * @return getValue of the appropriate converter
+     * @return voltage at the input
      */
-    public double getAdsValue (int i) {
+    public double readAnalogInputVoltage (int channel) {
+        int adsChannel = channel - 1;
         sn3218.output_raw(LED_COMMS, LED_RAW_POWER_ON);
-        if (i < 4) {
-            sn3218.output_raw(LED_ADC[i - 1], LED_RAW_POWER_ON);
+        if (channel < 4) {
+            sn3218.output_raw(LED_ADC[adsChannel], LED_RAW_POWER_ON);
         }
-        double rv = ads.getValue(i - 1);
-        if (i < 4) {
-            sn3218.output_raw(LED_ADC[i - 1], LED_RAW_POWER_OFF);
+
+        AnalogInputDevice aid = analogInputDevices[adsChannel];
+        float ad_voltage = aid.getScaledValue();
+        float rv = ad_voltage * (float) ((channel == 4) ? 1.0 : (25.85 / 3.3));
+
+        logger.debug ("ADS channel {} : {} {}", adsChannel, ad_voltage, rv);
+
+        if (channel < 4) {
+            sn3218.output_raw(LED_ADC[adsChannel], LED_RAW_POWER_OFF);
         }
         sn3218.output_raw(LED_COMMS, LED_RAW_POWER_OFF);
         return rv;
