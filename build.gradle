@@ -71,7 +71,7 @@ jar {
 
 remotes {
     tester {
-        host = 'battery-tester.localnet'
+        host = 'battery-tester.local'
         user = 'pi'
         knownHosts = allowAnyHosts
         identity = file('ssh/private')
