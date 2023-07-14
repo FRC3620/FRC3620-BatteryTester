@@ -29,7 +29,7 @@ public class BatteryTester implements Runnable {
     }
 
     enum InternalStatus {
-        DETERMINING_RINT_1_1, DETERMINING_RINT_1_2, LOADED, DETERMINING_RINT_2_1, DETERMINING_RINT_2_2;
+        DETERMINING_RINT_1_1, DETERMINING_RINT_1_2, LOADED, DETERMINING_RINT_2_1, DETERMINING_RINT_2_2, QUIET;
     }
 
     Status status = Status.STOPPED;
@@ -140,6 +140,10 @@ public class BatteryTester implements Runnable {
                     } else {
                         battery.setLoad(0);
                     }
+                    if (batteryTestReading.getVoltage() < 10.7) {
+                        logger.info ("hit voltage threshold, shutting down test");
+                        internalStatus = InternalStatus.DETERMINING_RINT_2_1;
+                    }
                 } else if (internalStatus == InternalStatus.DETERMINING_RINT_2_1) {
                     battery.setLoad(0);
                     internalStatus = InternalStatus.DETERMINING_RINT_2_2;
@@ -153,12 +157,8 @@ public class BatteryTester implements Runnable {
                     }
                     outputWriter = null;
                     status = Status.STOPPED;
+                    internalStatus = InternalStatus.QUIET;
                     sendStatus();
-                }
-
-                if (batteryTestReading.getVoltage() < 10.7) {
-                    logger.info ("hit voltage threshold, shutting down test");
-                    internalStatus = InternalStatus.DETERMINING_RINT_2_1;
                 }
 
                 if (loop_timer_counter > 0) loop_timer_counter--;
