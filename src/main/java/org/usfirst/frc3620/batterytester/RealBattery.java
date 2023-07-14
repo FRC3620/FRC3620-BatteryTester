@@ -25,8 +25,8 @@ public class RealBattery implements IBattery {
 
   @Override
   public BatteryReading getBatteryReading() {
-    double v = automationHat.readAnalogInputVoltage(3); // TODO change back to 1
-    double a = automationHat.readAnalogInputVoltage(2);
+    double v = automationHat.readAnalogInputVoltage(1);
+    double a = automationHat.readAnalogInputVoltage(2) * (100.0 / 0.075); // 100amp = 75mV
     BatteryReading rv = new BatteryReading(v, a, "");
     logger.debug("got reading: {}", rv);
     return rv;
@@ -37,9 +37,9 @@ public class RealBattery implements IBattery {
     if (load != amperage) {
       logger.info("setting load to {}", amperage);
       if (amperage > 0) {
-        automationHat.setRelay(1, true);
+        automationHat.setRelay(3, true);
       } else {
-        automationHat.setRelay(1, false);
+        automationHat.setRelay(3, false);
       }
       load = amperage;
     }
