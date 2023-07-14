@@ -29,11 +29,11 @@
     </Appenders>
 
     <Loggers>
-        <Logger name="com.diozero.devices.Ads1x15" level="trace" additivity="true"/>
+        <Logger name="com.diozero.devices.Ads1x15" level="info" additivity="true"/>
 
         <Logger name="org.usfirst.frc3620.batterytester.Application" level="trace" additivity="true"/>
         <Logger name="org.usfirst.frc3620.batterytester.Application$BatteryTestStatusWriter" level="info" additivity="true"/>
-        <Logger name="org.usfirst.frc3620.batterytester.AutomationHat" level="trace" additivity="true"/>
+        <Logger name="org.usfirst.frc3620.batterytester.AutomationHat" level="info" additivity="true"/>
         <Logger name="org.usfirst.frc3620.batterytester.BatteryTester" level="info" additivity="true"/>
         <Logger name="org.usfirst.frc3620.batterytester.FakeBattery" level="info" additivity="true"/>
         <Logger name="org.usfirst.frc3620.batterytester.FixedAds1x15" level="trace" additivity="true"/>
