@@ -14,8 +14,8 @@ public class AutomationHat implements AutoCloseable {
 
     AnalogInputDevice[] analogInputDevices;
     DigitalOutputDevice[] relays = new DigitalOutputDevice[3];
-    public final byte[] LED_RELAYS_NC = { 6, 8, 10 };
-    public final byte[] LED_RELAYS_NO = { 7, 9, 11 };
+    public final byte[] LED_RELAYS_NO = { 6, 8, 10 };
+    public final byte[] LED_RELAYS_NC = { 7, 9, 11 };
 
     public final byte[] LED_ADC = { 0, 1, 2 };
 
@@ -48,9 +48,9 @@ public class AutomationHat implements AutoCloseable {
 
         sn3218.output_raw(LED_POWER, LED_RAW_POWER_ON);
 
-        relays[0] = makeRelay(16);
+        relays[0] = makeRelay(13);
         relays[1] = makeRelay(19);
-        relays[2] = makeRelay(13);
+        relays[2] = makeRelay(16);
 
         for (int i = 1; i <= 3; i++) {
             setRelay(i, false);
